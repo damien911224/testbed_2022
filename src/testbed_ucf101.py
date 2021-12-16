@@ -1147,8 +1147,8 @@ class Networks:
 
         def __init__(self, networks):
             self.root_path = os.path.abspath("..")
-            # self.video_fps = 25.0
-            self.video_fps = -1
+            self.video_fps = 25.0
+            # self.video_fps = -1
             self.networks = networks
 
             self.meta_folder = os.path.join(self.root_path, "meta")
@@ -1918,6 +1918,7 @@ class Networks:
                                                      self.batch_size * (device_id + 1)]
                             else:
                                 inputs = self.frames
+
                             net = I3D.build_model(inputs=inputs,
                                                   weight_decay=self.weight_decay,
                                                   end_points=self.end_points,
