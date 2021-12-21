@@ -29,7 +29,445 @@ class Networks:
     def __init__(self):
         self.input_size = (224, 224, 3)
 
-    def train(self):
+    def pretrain(self):
+        print("=" * 90)
+        print("Networks Training")
+        print("=" * 90)
+
+        self.is_server = True
+        self.batch_size = 16 if self.is_server else 2
+        self.num_gpus = 2 if self.is_server else 1
+        self.num_workers = self.num_gpus * 20
+        self.data_type = "images"
+        self.dataset_name = "ucf101"
+        self.dataset_split = "split01"
+        self.flow_type = "tvl1"
+        self.optimizer_type = "SGD"
+        if self.dataset_name == "ucf101":
+            if self.optimizer_type == "Adam":
+                self.epochs = 200 if self.data_type == "images" else 300
+            else:
+                self.epochs = 25 if self.data_type == "images" else 100
+        else:
+            if self.optimizer_type == "Adam":
+                self.epochs = 50 if self.data_type == "images" else 80
+            else:
+                self.epochs = 80 if self.data_type == "images" else 120
+        self.temporal_width = 16
+        self.display_term = 1
+        self.dtype = tf.float32
+        self.dformat = "NCDHW"
+
+        if self.data_type == "images":
+            self.model_name = "UCF_RGB"
+        elif self.data_type == "flows":
+            self.model_name = "UCF_Flow"
+        now = time.localtime()
+        self.train_date = "{:02d}{:02d}".format(now.tm_mon, now.tm_mday)
+
+        self.validation_batch_size = self.batch_size
+        self.validation_term = 1
+        self.validation_temporal_width = self.temporal_width
+        self.validation_display_term = self.display_term
+        self.ckpt_save_term = 5
+
+        self.dataset = self.Dataset(self)
+
+        self.train_data, self.validation_data = self.dataset.getDataset("train")
+        self.train_iterator = self.train_data.tf_dataset.make_initializable_iterator()
+        self.train_next_element = self.train_iterator.get_next()
+
+        self.validation_iterator = self.validation_data.tf_dataset.make_one_shot_iterator()
+        self.validation_next_element = self.validation_iterator.get_next()
+        self.validation_size = self.validation_data.data_count // 1
+
+        self.save_ckpt_file_folder = \
+            os.path.join(self.dataset.root_path,
+                         "networks", "weights",
+                         "save", "{}_{}_{}_{}".format(self.model_name,
+                                                      self.dataset_name,
+                                                      self.dataset_split,
+                                                      self.train_date))
+        if self.data_type == "images":
+            self.load_ckpt_file_path = os.path.join(self.dataset.root_path, "cnn/I3D/rgb", "model.ckpt")
+        elif self.data_type == "flows":
+            self.load_ckpt_file_path = os.path.join(self.dataset.root_path, "cnn/I3D/flow", "model.ckpt")
+        else:
+            self.load_ckpt_file_path = os.path.join(self.dataset.root_path, "cnn/I3D/rgb", "model.ckpt")
+        self.summary_folder = os.path.join(self.dataset.root_path,
+                                           "networks", "summaries",
+                                           "{}_{}_{}_{}".format(self.model_name, self.dataset_name,
+                                                             self.dataset_split, self.train_date))
+        self.train_summary_file_path = os.path.join(self.summary_folder, "train_summary")
+        self.validation_summary_file_path = os.path.join(self.summary_folder, "validation_summary")
+
+        self.global_step = tf.Variable(0, trainable=False)
+        self.global_epochs = tf.Variable(1, trainable=False)
+        if self.optimizer_type == "Adam":
+            self.starter_learning_rate = 2.0e-4
+        else:
+            self.starter_learning_rate = 1.0e-2
+
+        if self.data_type == "images":
+            if self.dataset_name == "ucf101":
+                if self.optimizer_type == "Adam":
+                    boundaries = [70, 150]
+                else:
+                    # boundaries = [14, 16]
+                    boundaries = [20, 23]
+            else:
+                if self.optimizer_type == "Adam":
+                    boundaries = [20, 35]
+                else:
+                    boundaries = [40, 65]
+            values = [self.starter_learning_rate,
+                      self.starter_learning_rate * 1.0e-1,
+                      self.starter_learning_rate * 1.0e-2]
+        else:
+            if self.dataset_name == "ucf101":
+                if self.optimizer_type == "Adam":
+                    boundaries = [70, 150, 200, 250, 290]
+                else:
+                    boundaries = [120, 250, 300, 370, 420]
+            else:
+                if self.optimizer_type == "Adam":
+                    boundaries = [20, 35, 50, 60, 70]
+                else:
+                    boundaries = [40, 65, 80, 100, 110]
+            values = [self.starter_learning_rate,
+                      self.starter_learning_rate * 1.0e-1,
+                      self.starter_learning_rate * 1.0e-2,
+                      self.starter_learning_rate * 1.0e-1,
+                      self.starter_learning_rate * 1.0e-2,
+                      self.starter_learning_rate * 1.0e-3]
+        self.learning_rate = tf.train.piecewise_constant(self.global_epochs, boundaries, values)
+
+        global current_learning_rate
+        current_learning_rate = list()
+
+        if self.optimizer_type == "Adam":
+            self.optimizer = self.AdamOptimizer(learning_rate=self.learning_rate)
+        else:
+            self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
+                                                        momentum=0.9)
+
+        self.i3d = self.I3D(self, is_training=True, phase="pretraining", data_type=self.data_type)
+        self.i3d_validation = self.I3D(self, is_training=False, phase="pretraining", data_type=self.data_type)
+        self.i3d.build_model()
+        self.i3d_validation.build_model()
+
+        self.parameters = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+
+        self.parameter_dict = dict()
+        for parameter in self.parameters:
+            self.parameter_dict[parameter.name] = parameter
+
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+
+        with tf.control_dependencies(update_ops):
+            with tf.device("/cpu:0"):
+                self.train_step = self.optimizer.apply_gradients(self.i3d.average_grads,
+                                                                 global_step=self.global_step)
+
+        with tf.device("/cpu:0"):
+            for parameter in self.parameters:
+                if "BatchNorm" not in parameter.name:
+                    tf.summary.histogram(parameter.name, parameter)
+
+            self.variable_summary = tf.summary.merge_all()
+
+            if self.optimizer_type == "Adam":
+                current_learning_rate = tf.reduce_mean(tf.stack(current_learning_rate))
+            else:
+                current_learning_rate = self.learning_rate
+
+            self.loss_summary_ph = tf.placeholder(dtype=tf.float32)
+            self.loss_summary = tf.summary.scalar("loss", self.loss_summary_ph)
+            self.accuracy_summary_ph = tf.placeholder(dtype=tf.float32)
+            self.accuracy_summary = tf.summary.scalar("accuracy", self.accuracy_summary_ph)
+            self.current_learning_rate_ph = tf.placeholder(dtype=tf.float32)
+            self.current_learning_rate_summary = tf.summary.scalar("current_learning_rate",
+                                                                   self.current_learning_rate_ph)
+
+            self.train_summaries = tf.summary.merge([self.variable_summary, self.loss_summary,
+                                                     self.accuracy_summary,
+                                                     self.current_learning_rate_summary])
+
+            self.validation_summaries = tf.summary.merge([self.loss_summary,
+                                                          self.accuracy_summary])
+
+        os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join([str(device_id) for device_id in range(self.num_gpus)])
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+        os.environ["TF_ENABLE_WINOGRAD_NONFUSED"] = "1"
+
+        self.best_validation = float("-inf")
+        self.previous_best_epoch = None
+
+        saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES),
+                               max_to_keep=self.epochs)
+
+        with tf.Session() as session:
+            session.run(self.train_iterator.initializer)
+
+            rmtree(self.summary_folder, ignore_errors=True)
+            rmtree(self.save_ckpt_file_folder, ignore_errors=True)
+            try:
+                os.mkdir(self.save_ckpt_file_folder)
+            except OSError:
+                pass
+            self.train_summary_writer = tf.summary.FileWriter(self.train_summary_file_path, session.graph)
+            self.validation_summary_writer = tf.summary.FileWriter(self.validation_summary_file_path)
+
+            # Initialize all the variables
+            init_variables = tf.global_variables_initializer()
+            session.run(init_variables)
+
+            batch_iteration = 1
+
+            summary = session.run(self.variable_summary)
+            self.train_summary_writer.add_summary(summary, 0)
+
+            for epoch in range(1, self.epochs + 1, 1):
+                session.run([self.train_iterator.initializer, self.global_epochs.assign(epoch)])
+                epoch_loss = 0.0
+                epoch_accuracy = 0.0
+                epoch_learning_rate = 0.0
+                epoch_batch_iteration = 0
+                epoch_time = 0.0
+                epoch_preprocessing_time = 0.0
+                epoch_training_time = 0.0
+
+                batch_length = int(
+                    math.floor(float(self.train_data.data_count) / float(self.batch_size * self.num_gpus)))
+
+                while True:
+                    iteration_start_time = time.time()
+                    preprocessing_start_time = time.time()
+                    try:
+                        frame_vectors, target_vectors = \
+                            session.run(self.train_next_element)
+                    except tf.errors.OutOfRangeError:
+                        break
+
+                    if len(frame_vectors) < self.batch_size * self.num_gpus:
+                        frame_vectors = np.concatenate([frame_vectors,
+                                                        np.repeat(np.expand_dims(np.zeros_like(frame_vectors[0]),
+                                                                                 axis=0),
+                                                                  self.batch_size * self.num_gpus - len(frame_vectors),
+                                                                  axis=0)],
+                                                       axis=0)
+                        target_vectors = np.concatenate([target_vectors,
+                                                         np.repeat(np.expand_dims(np.zeros_like(target_vectors[0]),
+                                                                                  axis=0),
+                                                                   self.batch_size * self.num_gpus - len(
+                                                                       target_vectors),
+                                                                   axis=0)],
+                                                        axis=0)
+
+                    epoch_preprocessing_time += time.time() - preprocessing_start_time
+
+                    train_step_start_time = time.time()
+                    _, loss, \
+                    accuracy, \
+                    predictions, \
+                    current_lr = \
+                        session.run(
+                            [self.train_step,
+                             self.i3d.loss,
+                             self.i3d.accuracy,
+                             self.i3d.predictions,
+                             current_learning_rate],
+                            feed_dict={self.i3d.frames: frame_vectors,
+                                       self.i3d.targets: target_vectors
+                                       })
+
+                    epoch_training_time += time.time() - train_step_start_time
+                    epoch_loss += loss
+                    epoch_accuracy += accuracy
+                    epoch_learning_rate += current_lr
+
+                    if (batch_iteration) % self.display_term == 0:
+                        predictions = np.argmax(predictions, axis=-1)
+                        targets = target_vectors
+
+                        if len(predictions) < 3:
+                            show_indices = range(0, len(predictions), 1)
+                            for _ in range(3 - len(predictions)):
+                                show_indices.append(random.sample(range(0, len(predictions), 1), 1)[0])
+                        else:
+                            show_indices = random.sample(range(0, len(predictions), 1), 3)
+                        show_indices.sort()
+
+                        target_labels = \
+                            [self.dataset.label_dic[str(targets[show_index])]
+                             for show_index in show_indices]
+                        prediction_labels = \
+                            [self.dataset.label_dic[str(predictions[show_index])]
+                             for show_index in show_indices]
+
+                        print("{:<20s}: {:05d} |{:<20s}: {:03d}({:03d}/{:03d})\n" \
+                              "{:<20s}: {:.9f}/{:.5f} ({:f})\n" \
+                              "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}\n" \
+                              "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}\n" \
+                              "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}".format(
+                            "Epochs", epoch, "Batch Iterations", batch_iteration,
+                            epoch_batch_iteration + 1, batch_length,
+                            "Loss", loss, accuracy, current_lr,
+                            show_indices[0] + 1, target_labels[0], show_indices[0] + 1, prediction_labels[0],
+                            show_indices[1] + 1, target_labels[1], show_indices[1] + 1, prediction_labels[1],
+                            show_indices[2] + 1, target_labels[2], show_indices[2] + 1, prediction_labels[2]))
+
+                    epoch_batch_iteration += 1
+                    batch_iteration += 1
+
+                    epoch_time += time.time() - iteration_start_time
+                    print("Pre-processing Time: {:.5f}".format(epoch_preprocessing_time /
+                                                               epoch_batch_iteration))
+                    print("Training Time: {:.5f}".format(epoch_training_time /
+                                                         epoch_batch_iteration))
+                    print("One-Iteration Time: {:.5f}".format(epoch_time /
+                                                              epoch_batch_iteration))
+
+                epoch_loss /= float(epoch_batch_iteration)
+                epoch_accuracy /= float(epoch_batch_iteration)
+                epoch_learning_rate /= float(epoch_batch_iteration)
+                epoch_training_time /= float(epoch_batch_iteration)
+                epoch_preprocessing_time /= float(epoch_batch_iteration)
+
+                train_summary = session.run(self.train_summaries,
+                                            feed_dict={self.loss_summary_ph: epoch_loss,
+                                                       self.accuracy_summary_ph: epoch_accuracy,
+                                                       self.current_learning_rate_ph: epoch_learning_rate
+                                                       })
+                self.train_summary_writer.add_summary(train_summary, epoch)
+
+                print("=" * 90)
+                print("Epoch {:05d} Done ... Current Batch Iterations {:07d}".format(epoch, batch_iteration))
+                print("Epoch {:05d} Loss {:.8f}".format(epoch, epoch_loss))
+                print("Epoch {:05d} Takes {:03d} Batch Iterations".format(epoch, epoch_batch_iteration))
+                print("Epoch {:05d} Takes {:.2f} Hours".format(epoch, epoch_time / 3600.0))
+                print("Epoch {:05d} Average One Loop Time {:.2f} Seconds".format(epoch,
+                                                                                 epoch_time / float(
+                                                                                     epoch_batch_iteration)))
+                print("Epoch {:05d} Average One Preprocessing Time {:.2f} Seconds".format(epoch,
+                                                                                          epoch_preprocessing_time))
+                print("Epoch {:05d} Average One Train Step Time {:.2f} Seconds".format(epoch,
+                                                                                       epoch_training_time))
+                print("Epoch {:05d} Current Learning Rate {:f}".format(epoch, epoch_learning_rate))
+                print("=" * 90)
+
+                if (epoch) % self.validation_term == 0 or epoch == 1:
+                    print("Validation on Epochs {:05d}".format(epoch))
+
+                    validation_loss = 0.0
+                    validation_accuracy = 0.0
+
+                    loop_rounds = max(int(math.ceil(float(self.validation_size) /
+                                                    float(self.validation_batch_size * self.num_gpus))),
+                                      1)
+
+                    for validation_batch_index in range(loop_rounds):
+                        try:
+                            frame_vectors, target_vectors, identities = session.run(self.validation_next_element)
+                        except tf.errors.OutOfRangeError:
+                            break
+
+                        loss, accuracy, predictions = \
+                            session.run(
+                                [self.i3d_validation.loss,
+                                 self.i3d_validation.accuracy,
+                                 self.i3d_validation.predictions],
+                                feed_dict={self.i3d_validation.frames: frame_vectors,
+                                           self.i3d_validation.targets: target_vectors
+                                           })
+
+                        validation_loss += loss
+                        validation_accuracy += accuracy
+
+                        if (validation_batch_index + 1) % self.validation_display_term == 0:
+                            predictions = np.argmax(predictions, axis=-1)
+                            targets = target_vectors
+
+                            if len(predictions) < 3:
+                                show_indices = range(0, len(predictions), 1)
+                                for _ in range(3 - len(predictions)):
+                                    show_indices.append(random.sample(range(0, len(predictions), 1), 1)[0])
+                            else:
+                                show_indices = random.sample(range(0, len(predictions), 1), 3)
+                            show_indices.sort()
+
+                            target_labels = \
+                                [self.dataset.label_dic[str(targets[show_index])]
+                                 for show_index in show_indices]
+                            prediction_labels = \
+                                [self.dataset.label_dic[str(predictions[show_index])]
+                                 for show_index in show_indices]
+
+                            print(
+                                "{:<20s}: {:05d} |{:<20s}: {:03d}/{:03d}\n" \
+                                "{:<20s}: {:.9f}/{:.5f} ({})\n" \
+                                "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}\n" \
+                                "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}\n" \
+                                "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}".format(
+                                    "Epochs", epoch, "Batch Iterations",
+                                    validation_batch_index + 1, loop_rounds,
+                                    "Loss", loss, accuracy,
+                                    "VALIDATION",
+                                    show_indices[0] + 1, target_labels[0],
+                                    show_indices[0] + 1, prediction_labels[0],
+                                    show_indices[1] + 1, target_labels[1],
+                                    show_indices[1] + 1, prediction_labels[1],
+                                    show_indices[2] + 1, target_labels[2],
+                                    show_indices[2] + 1, prediction_labels[2]))
+
+                    validation_loss /= float(loop_rounds)
+                    validation_accuracy /= float(loop_rounds)
+
+                    validation_summary = \
+                        session.run(self.validation_summaries,
+                                    feed_dict={self.loss_summary_ph: validation_loss,
+                                               self.accuracy_summary_ph: validation_accuracy
+                                               })
+                    self.validation_summary_writer.add_summary(validation_summary, epoch)
+
+                    validation_quality = 0.5 * validation_accuracy - 0.5 * validation_loss
+
+                    if epoch % self.ckpt_save_term == 0:
+                        # if self.previous_best_epoch and self.previous_best_epoch != epoch - self.ckpt_save_term:
+                        #     weight_files = glob.glob(os.path.join(self.save_ckpt_file_folder,
+                        #                                           "weights.ckpt-{}.*".format(
+                        #                                               epoch - self.ckpt_save_term)))
+                        #     for file in weight_files:
+                        #         try:
+                        #             os.remove(file)
+                        #         except OSError:
+                        #             pass
+
+                        saver.save(session, os.path.join(self.save_ckpt_file_folder, "weights.ckpt"),
+                                   global_step=epoch)
+
+                    if validation_quality >= self.best_validation:
+                        self.best_validation = validation_quality
+                        if self.previous_best_epoch and self.previous_best_epoch % self.ckpt_save_term != 0:
+                            weight_files = glob.glob(os.path.join(self.save_ckpt_file_folder,
+                                                                  "weights.ckpt-{}.*".format(self.previous_best_epoch)))
+                            for file in weight_files:
+                                try:
+                                    os.remove(file)
+                                except OSError:
+                                    pass
+
+                        if epoch % self.ckpt_save_term != 0:
+                            saver.save(session, os.path.join(self.save_ckpt_file_folder, "weights.ckpt"),
+                                       global_step=epoch)
+                        self.previous_best_epoch = epoch
+
+                    print("Validation Results ...")
+                    print("Validation Loss {:.5f}".format(validation_loss))
+                    print("Validation Accuracy {:.5f}".format(validation_accuracy))
+                    print("=" * 90)
+
+    def finetune(self):
         print("=" * 90)
         print("Networks Training")
         print("=" * 90)
@@ -1832,14 +2270,16 @@ class Networks:
 
     class I3D():
 
-        def __init__(self, networks, is_training, data_type,
+        def __init__(self, networks, is_training, phase, data_type,
                      batch_size=None, device_id=None, num_classes=None):
             self.networks = networks
             self.is_training = is_training
+            self.phase = phase
             self.data_type = data_type
 
             self.dropout_prob = 0.5
             self.weight_decay = 1.0e-7
+            self.K = 200
 
             if batch_size is None:
                 self.batch_size = \
@@ -1904,9 +2344,10 @@ class Networks:
                                                                      self.input_size[0],
                                                                      self.input_size[1]))
 
-            self.targets = tf.placeholder(dtype=tf.int64,
-                                          shape=(batch_size),
-                                          name="targets")
+            if self.phase == "finetuning":
+                self.targets = tf.placeholder(dtype=tf.int64,
+                                              shape=(batch_size, ),
+                                              name="targets")
 
             self.end_points = dict()
             for device_id in range(self.num_gpus):
@@ -1927,86 +2368,118 @@ class Networks:
                                                   is_training=self.is_training,
                                                   scope=self.i3d_name)
 
-                            end_point = "Logits"
-                            with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-                                with tf.variable_scope("AvgPool_0a_2x7x7", reuse=tf.AUTO_REUSE):
-                                    net = tf.nn.avg_pool3d(net,
-                                                           [1, 2, 7, 7, 1]
-                                                           if self.networks.dformat == "NDHWC"
-                                                           else [1, 1, 2, 7, 7],
-                                                           strides=[1, 1, 1, 1, 1],
-                                                           padding="VALID",
-                                                           data_format=self.networks.dformat)
+                            if self.phase == "pretraining":
+                                end_point = "Codebook"
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    self.codebook = \
+                                        tf.get_variable(name="codebook",
+                                                        dtype=self.networks.dtype,
+                                                        shape=[self.K, net.get_shape()[-1]],
+                                                        initializer=kernel_initializer,
+                                                        regularizer=kernel_regularizer,
+                                                        trainable=self.is_training)
 
-                                with tf.variable_scope("Dropout_0b", reuse=tf.AUTO_REUSE):
-                                    net = tf.nn.dropout(net,
-                                                        keep_prob=0.5 if self.is_training else 1.0)
+                                end_point = "VQ"
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    # net: N, T, H, W, C
+                                    # codebook: K, C
+                                    N, T, H, W, C = net.get_shape().as_list()
+                                    K, _ = self.codebook.get_shape().as_list()
+                                    # N, K, T, H, W
+                                    distances = tf.reduce_sum(tf.square(tf.subtract(
+                                        tf.expand_dims(net, axis=1),
+                                        tf.reshape(self.codebook, (1, K, 1, 1, 1, C)))), axis=-1)
 
-                                with tf.variable_scope("Conv3d_0c_1x1x1", reuse=tf.AUTO_REUSE):
-                                    kernel = tf.get_variable(name="conv_3d/kernel",
-                                                             dtype=self.networks.dtype,
-                                                             shape=[1, 1, 1,
-                                                                    net.get_shape()[-1]
-                                                                    if self.networks.dformat == "NDHWC"
-                                                                    else net.get_shape()[1],
-                                                                    self.num_classes],
-                                                             initializer=kernel_initializer,
-                                                             regularizer=kernel_regularizer,
-                                                             trainable=self.is_training)
-                                    biases = tf.get_variable(name="conv_3d/bias",
-                                                             dtype=self.networks.dtype,
-                                                             shape=[1, 1, 1, 1,
-                                                                    self.num_classes]
-                                                             if self.networks.dformat == "NDHWC"
-                                                             else [1, self.num_classes,
-                                                                   1, 1, 1],
-                                                             initializer=bias_initilizer,
-                                                             regularizer=bias_regularizer,
-                                                             trainable=self.is_training)
-                                    conv = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
-                                                        data_format=self.networks.dformat)
-                                    net = tf.add(conv, biases)
+                                    # N, T, H, W
+                                    max_indices = tf.argmax(distances, axis=1)
+                                    max_indices = tf.reshape(max_indices, (-1, ))
 
-                                net = tf.reduce_mean(net,
-                                                     axis=1 if self.networks.dformat == "NDHWC" else 2,
-                                                     keepdims=True)
+                                    gathered_words = tf.gather(self.codebook, max_indices)
+                                    gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
 
-                                net = tf.squeeze(net,
-                                                 axis=[1, 2, 3]
-                                                 if self.networks.dformat == "NDHWC"
-                                                 else [2, 3, 4])
-                            try:
-                                self.end_points[end_point] = \
-                                    tf.concat([self.end_points[end_point], net], axis=0)
-                            except KeyError:
-                                self.end_points[end_point] = net
+                                    net = tf.identity(gathered_words)
 
-                        self.predictions.append(tf.nn.softmax(net, axis=-1))
+                            else:
+                                end_point = "Logits"
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    with tf.variable_scope("AvgPool_0a_2x7x7", reuse=tf.AUTO_REUSE):
+                                        net = tf.nn.avg_pool3d(net,
+                                                               [1, 2, 7, 7, 1]
+                                                               if self.networks.dformat == "NDHWC"
+                                                               else [1, 1, 2, 7, 7],
+                                                               strides=[1, 1, 1, 1, 1],
+                                                               padding="VALID",
+                                                               data_format=self.networks.dformat)
 
-                        if self.batch_size is not None:
-                            targets = self.targets[
-                                      self.batch_size * device_id:
-                                      self.batch_size * (device_id + 1)]
-                        else:
-                            targets = self.targets
+                                    with tf.variable_scope("Dropout_0b", reuse=tf.AUTO_REUSE):
+                                        net = tf.nn.dropout(net,
+                                                            keep_prob=0.5 if self.is_training else 1.0)
 
-                        self.accuracy += \
-                            tf.reduce_mean(
-                                tf.cast(
-                                    tf.equal(
-                                        tf.argmax(self.predictions[-1],
-                                                  axis=-1),
-                                        targets),
-                                    self.networks.dtype))
+                                    with tf.variable_scope("Conv3d_0c_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1]
+                                                                        if self.networks.dformat == "NDHWC"
+                                                                        else net.get_shape()[1],
+                                                                        self.num_classes],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        biases = tf.get_variable(name="conv_3d/bias",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1, 1,
+                                                                        self.num_classes]
+                                                                 if self.networks.dformat == "NDHWC"
+                                                                 else [1, self.num_classes,
+                                                                       1, 1, 1],
+                                                                 initializer=bias_initilizer,
+                                                                 regularizer=bias_regularizer,
+                                                                 trainable=self.is_training)
+                                        conv = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                            data_format=self.networks.dformat)
+                                        net = tf.add(conv, biases)
 
-                        loss = \
-                            tf.reduce_mean(
-                                tf.nn.sparse_softmax_cross_entropy_with_logits(
-                                    labels=targets,
-                                    logits=net
-                                )
-                            )
-                        self.loss += loss
+                                    net = tf.reduce_mean(net,
+                                                         axis=1 if self.networks.dformat == "NDHWC" else 2,
+                                                         keepdims=True)
+
+                                    net = tf.squeeze(net,
+                                                     axis=[1, 2, 3]
+                                                     if self.networks.dformat == "NDHWC"
+                                                     else [2, 3, 4])
+                                try:
+                                    self.end_points[end_point] = \
+                                        tf.concat([self.end_points[end_point], net], axis=0)
+                                except KeyError:
+                                    self.end_points[end_point] = net
+
+                                self.predictions.append(tf.nn.softmax(net, axis=-1))
+
+                                if self.batch_size is not None:
+                                    targets = self.targets[
+                                              self.batch_size * device_id:
+                                              self.batch_size * (device_id + 1)]
+                                else:
+                                    targets = self.targets
+
+                                self.accuracy += \
+                                    tf.reduce_mean(
+                                        tf.cast(
+                                            tf.equal(
+                                                tf.argmax(self.predictions[-1],
+                                                          axis=-1),
+                                                targets),
+                                            self.networks.dtype))
+
+                                loss = \
+                                    tf.reduce_mean(
+                                        tf.nn.sparse_softmax_cross_entropy_with_logits(
+                                            labels=targets,
+                                            logits=net
+                                        )
+                                    )
+                                self.loss += loss
 
                         if self.is_training:
                             gradients = self.networks.optimizer.compute_gradients(loss)
@@ -2045,4 +2518,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.IS()
+    networks.pretrain()
