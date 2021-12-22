@@ -2281,6 +2281,8 @@ class Networks:
             self.weight_decay = 1.0e-7
             self.K = 200
 
+            self.solver_gamma = 0.10
+
             if batch_size is None:
                 self.batch_size = \
                     self.networks.batch_size if self.is_training \
@@ -2318,13 +2320,18 @@ class Networks:
             self.gradients = list()
             self.loss = 0.0
             self.accuracy = 0.0
+            self.solver_loss = 0.0
+            self.reconstruction_loss = 0.0
             self.predictions = list()
 
             kernel_initializer = tf.contrib.layers.variance_scaling_initializer()
             kernel_regularizer = tf.contrib.layers.l2_regularizer(self.weight_decay)
-            bias_initilizer = tf.zeros_initializer()
+            bias_initializer = tf.zeros_initializer()
             # bias_regularizer = tf.contrib.layers.l2_regularizer(self.weight_decay)
             bias_regularizer = None
+
+            batch_norm_decay = 0.9997
+            batch_norm_epsilon = 0.001
 
             batch_size = \
                 self.batch_size if self.batch_size is None \
@@ -2348,6 +2355,11 @@ class Networks:
                 self.targets = tf.placeholder(dtype=tf.int64,
                                               shape=(batch_size, ),
                                               name="targets")
+            else:
+                self.masks = tf.placeholder(dtype=tf.int64,
+                                            shape=(batch_size, 8),
+                                            name="masks")
+
 
             self.end_points = dict()
             for device_id in range(self.num_gpus):
@@ -2360,18 +2372,21 @@ class Networks:
                             else:
                                 inputs = self.frames
 
-                            net = I3D.build_model(inputs=inputs,
-                                                  weight_decay=self.weight_decay,
-                                                  end_points=self.end_points,
-                                                  dtype=self.networks.dtype,
-                                                  dformat=self.networks.dformat,
-                                                  is_training=self.is_training,
-                                                  scope=self.i3d_name)
+                            net, end_points = I3D.build_model(inputs=inputs,
+                                                              weight_decay=self.weight_decay,
+                                                              end_points=self.end_points,
+                                                              dtype=self.networks.dtype,
+                                                              dformat=self.networks.dformat,
+                                                              is_training=self.is_training,
+                                                              scope=self.i3d_name)
 
                             if self.phase == "pretraining":
+                                masks = self.masks[self.batch_size * device_id:
+                                                   self.batch_size * (device_id + 1)]
+
                                 end_point = "Codebook"
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-                                    self.codebook = \
+                                    T_codebook = \
                                         tf.get_variable(name="codebook",
                                                         dtype=self.networks.dtype,
                                                         shape=[self.K, net.get_shape()[-1]],
@@ -2383,22 +2398,219 @@ class Networks:
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
                                     # net: N, T, H, W, C
                                     # codebook: K, C
-                                    N, T, H, W, C = net.get_shape().as_list()
-                                    K, _ = self.codebook.get_shape().as_list()
-                                    # N, K, T, H, W
-                                    distances = tf.reduce_sum(tf.square(tf.subtract(
-                                        tf.expand_dims(net, axis=1),
-                                        tf.reshape(self.codebook, (1, K, 1, 1, 1, C)))), axis=-1)
+                                    T_pooled = tf.reduce_mean(net, axis=(2, 3))
+                                    N, T, C = T_pooled.get_shape().as_list()
+                                    K, _ = T_codebook.get_shape().as_list()
 
-                                    # N, T, H, W
-                                    max_indices = tf.argmax(distances, axis=1)
-                                    max_indices = tf.reshape(max_indices, (-1, ))
+                                    # # N, K, T, H, W
+                                    # distances = tf.reduce_sum(tf.square(tf.subtract(
+                                    #     tf.expand_dims(net, axis=1),
+                                    #     tf.reshape(T_codebook, (1, K, 1, 1, 1, C)))), axis=-1)
 
-                                    gathered_words = tf.gather(self.codebook, max_indices)
-                                    gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
+                                    # # N, T, H, W
+                                    # max_indices = tf.argmax(distances, axis=1)
+                                    # max_indices = tf.reshape(max_indices, (-1, ))
+                                    #
+                                    # gathered_words = tf.gather(T_codebook, max_indices)
+                                    # gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
 
-                                    net = tf.identity(gathered_words)
+                                    soft_targets = \
+                                        tf.matmul(T_pooled,
+                                                  tf.expand_dims(tf.transpose(T_codebook, (1, 0)), axis=0))
+                                    # N, T, K
+                                    soft_targets = tf.nn.softmax(soft_targets, axis=-1)
 
+                                    gathered_words = tf.multiply(tf.reshape(T_codebook, (1, 1, K, C)),
+                                                                 tf.expand_dims(soft_targets, axis=-1))
+                                    # N, T, C
+                                    gathered_words = tf.reduce_sum(gathered_words, axis=2)
+
+
+                                end_point = "Solver"
+                                net = tf.identity(gathered_words)
+                                net = tf.multiply(net, tf.expand_dims(masks, axis=-1))
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    with tf.variable_scope("Conv1d_3x3_1a", reuse=tf.AUTO_REUSE):
+                                        C = net.get_shape().as_list()[-1] \
+                                            if self.networks.dformat == "NDHWC" \
+                                            else net.get_shape().as_list()[1]
+                                        kernel = tf.get_variable(name="conv_1d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[3, C, C],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        net = tf.nn.conv1d(net, kernel, [1, 1, 1], padding="SAME")
+                                        bias = tf.get_variable(name="conv_1d/bias",
+                                                               dtype=self.networks.dtype,
+                                                               shape=[C],
+                                                               initializer=bias_initializer,
+                                                               regularizer=bias_regularizer,
+                                                               trainable=self.is_training)
+                                        net = tf.nn.bias_add(net, bias)
+                                        net = tf.layers.batch_normalization(net,
+                                                                            axis=-1,
+                                                                            center=True,
+                                                                            scale=False,
+                                                                            momentum=batch_norm_decay,
+                                                                            epsilon=batch_norm_epsilon,
+                                                                            training=self.is_training,
+                                                                            trainable=self.is_training)
+                                        net = tf.nn.relu(net)
+
+                                    with tf.variable_scope("Conv1d_3x3_1b", reuse=tf.AUTO_REUSE):
+                                        C = net.get_shape().as_list()[-1] \
+                                            if self.networks.dformat == "NDHWC" \
+                                            else net.get_shape().as_list()[1]
+                                        kernel = tf.get_variable(name="conv_1d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[3, C, C],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        net = tf.nn.conv1d(net, kernel, [1, 1, 1], padding="SAME")
+                                        bias = tf.get_variable(name="conv_1d/bias",
+                                                               dtype=self.networks.dtype,
+                                                               shape=[C],
+                                                               initializer=bias_initializer,
+                                                               regularizer=bias_regularizer,
+                                                               trainable=self.is_training)
+                                        net = tf.nn.bias_add(net, bias)
+                                        net = tf.layers.batch_normalization(net,
+                                                                            axis=-1,
+                                                                            center=True,
+                                                                            scale=False,
+                                                                            momentum=batch_norm_decay,
+                                                                            epsilon=batch_norm_epsilon,
+                                                                            training=self.is_training,
+                                                                            trainable=self.is_training)
+                                        net = tf.nn.relu(net)
+
+                                    with tf.variable_scope("SolverLogits", reuse=tf.AUTO_REUSE):
+                                        C = net.get_shape().as_list()[-1]
+                                        target_C = self.K
+                                        kernel = tf.get_variable(name="conv_1d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, C, target_C],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        net = tf.nn.conv1d(net, kernel, [1, 1, 1], padding="SAME")
+                                        bias = tf.get_variable(name="conv_1d/bias",
+                                                               dtype=self.networks.dtype,
+                                                               shape=[target_C],
+                                                               initializer=bias_initializer,
+                                                               regularizer=bias_regularizer,
+                                                               trainable=self.is_training)
+                                        net = tf.nn.bias_add(net, bias)
+
+                                    p = net
+                                    t = soft_targets
+                                    solver_loss = -tf.reduce_mean(t * tf.log(p + 1.0e-7), axis=-1)
+                                    solver_loss = tf.multiply(solver_loss, masks)
+                                    solver_loss = tf.reduce_sum(solver_loss, axis=1)
+                                    solver_loss = tf.reduce_mean(solver_loss, axis=0)
+
+                                    self.solver_loss += solver_loss
+
+                                end_point = "Decoder"
+                                net = tf.identity(gathered_words)
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    for level_index in range(2):
+                                        with tf.variable_scope("Level_{:02d}".format(level_index + 1)):
+                                            with tf.variable_scope("UpSample_0a", reuse=tf.AUTO_REUSE):
+                                                N, T, C = net.get_shape().as_list()
+                                                net = tf.expand_dims(net, axis=1)
+                                                net = tf.image.resize_bilinear(net, size=(1, T * 2))
+                                                net = tf.squeeze(net, axis=1)
+
+                                            with tf.variable_scope("Conv1d_3x3_1a", reuse=tf.AUTO_REUSE):
+                                                C = net.get_shape().as_list()[-1] \
+                                                    if self.networks.dformat == "NDHWC" \
+                                                    else net.get_shape().as_list()[1]
+                                                kernel = tf.get_variable(name="conv_1d/kernel",
+                                                                         dtype=self.networks.dtype,
+                                                                         shape=[3, C, C],
+                                                                         initializer=kernel_initializer,
+                                                                         regularizer=kernel_regularizer,
+                                                                         trainable=self.is_training)
+                                                net = tf.nn.conv1d(net, kernel, [1, 1, 1], padding="SAME")
+                                                bias = tf.get_variable(name="conv_1d/bias",
+                                                                       dtype=self.networks.dtype,
+                                                                       shape=[C],
+                                                                       initializer=bias_initializer,
+                                                                       regularizer=bias_regularizer,
+                                                                       trainable=self.is_training)
+                                                net = tf.nn.bias_add(net, bias)
+                                                net = tf.layers.batch_normalization(net,
+                                                                                    axis=-1,
+                                                                                    center=True,
+                                                                                    scale=False,
+                                                                                    momentum=batch_norm_decay,
+                                                                                    epsilon=batch_norm_epsilon,
+                                                                                    training=self.is_training,
+                                                                                    trainable=self.is_training)
+                                                net = tf.nn.relu(net)
+
+                                            with tf.variable_scope("Conv1d_3x3_1b", reuse=tf.AUTO_REUSE):
+                                                C = net.get_shape().as_list()[-1] \
+                                                    if self.networks.dformat == "NDHWC" \
+                                                    else net.get_shape().as_list()[1]
+                                                kernel = tf.get_variable(name="conv_1d/kernel",
+                                                                         dtype=self.networks.dtype,
+                                                                         shape=[3, C, C],
+                                                                         initializer=kernel_initializer,
+                                                                         regularizer=kernel_regularizer,
+                                                                         trainable=self.is_training)
+                                                net = tf.nn.conv1d(net, kernel, [1, 1, 1], padding="SAME")
+                                                bias = tf.get_variable(name="conv_1d/bias",
+                                                                       dtype=self.networks.dtype,
+                                                                       shape=[C],
+                                                                       initializer=bias_initializer,
+                                                                       regularizer=bias_regularizer,
+                                                                       trainable=self.is_training)
+                                                net = tf.nn.bias_add(net, bias)
+                                                net = tf.layers.batch_normalization(net,
+                                                                                    axis=-1,
+                                                                                    center=True,
+                                                                                    scale=False,
+                                                                                    momentum=batch_norm_decay,
+                                                                                    epsilon=batch_norm_epsilon,
+                                                                                    training=self.is_training,
+                                                                                    trainable=self.is_training)
+                                                net = tf.nn.relu(net)
+
+                                        low_level_features = end_points["MaxPool_3a_1x3x3"]
+
+                                        with tf.variable_scope("ReconstructionLogits", reuse=tf.AUTO_REUSE):
+                                            with tf.variable_scope("Conv1d_3x3_0a", reuse=tf.AUTO_REUSE):
+                                                C = net.get_shape().as_list()[-1]
+                                                target_C = low_level_features.get_shape().as_list()[-1]
+                                                kernel = tf.get_variable(name="conv_1d/kernel",
+                                                                         dtype=self.networks.dtype,
+                                                                         shape=[1, C, target_C],
+                                                                         initializer=kernel_initializer,
+                                                                         regularizer=kernel_regularizer,
+                                                                         trainable=self.is_training)
+                                                net = tf.nn.conv1d(net, kernel, [1, 1, 1], padding="SAME")
+                                                bias = tf.get_variable(name="conv_1d/bias",
+                                                                       dtype=self.networks.dtype,
+                                                                       shape=[target_C],
+                                                                       initializer=bias_initializer,
+                                                                       regularizer=bias_regularizer,
+                                                                       trainable=self.is_training)
+                                                net = tf.nn.bias_add(net, bias)
+
+                                    reconstruction_loss = \
+                                        tf.reduce_sum(tf.square(net -
+                                                                tf.reduce_mean(low_level_features, axis=(2, 3))),
+                                                      axis=-1)
+                                    reconstruction_loss = tf.reduce_mean(reconstruction_loss, axis=-1)
+                                    reconstruction_loss = tf.reduce_mean(reconstruction_loss, axis=0)
+
+                                    self.reconstruction_loss += reconstruction_loss
+
+                                loss = self.solver_gamma * solver_loss + reconstruction_loss
                             else:
                                 end_point = "Logits"
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
@@ -2490,8 +2702,12 @@ class Networks:
 
             with tf.device("/cpu:0"):
                 self.loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
-                self.accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
-                self.predictions = tf.concat(self.predictions, axis=0)
+                if self.phase == "pretraining":
+                    self.solver_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
+                    self.reconstruction_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
+                else:
+                    self.accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
+                    self.predictions = tf.concat(self.predictions, axis=0)
 
                 if self.is_training:
                     self.average_grads = list()
