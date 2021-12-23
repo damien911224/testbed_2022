@@ -436,16 +436,30 @@ class Networks:
                                                       self.dataset_name,
                                                       self.dataset_split,
                                                       self.train_date))
-        if self.data_type == "images":
-            self.load_ckpt_file_path = os.path.join(self.dataset.root_path, "cnn/I3D/rgb", "model.ckpt")
-        elif self.data_type == "flows":
-            self.load_ckpt_file_path = os.path.join(self.dataset.root_path, "cnn/I3D/flow", "model.ckpt")
-        else:
-            self.load_ckpt_file_path = os.path.join(self.dataset.root_path, "cnn/I3D/rgb", "model.ckpt")
+        self.load_ckpt_file_path = os.path.join(self.dataset.root_path,
+                         "networks", "weights",
+                         "save", "{}_{}_{}_{}_{}".format(self.model_name,
+                                                         self.dataset_name.upper(),
+                                                         "RGB" if self.data_type == "images" else "Flow",
+                                                         "Pretraining",
+                                                         "1223"))
+
+        self.save_ckpt_file_folder = \
+            os.path.join(self.dataset.root_path,
+                         "networks", "weights",
+                         "save", "{}_{}_{}_{}_{}".format(self.model_name,
+                                                         self.dataset_name.upper(),
+                                                         "RGB" if self.data_type == "images" else "Flow",
+                                                         "Finetuing",
+                                                         self.train_date))
+
         self.summary_folder = os.path.join(self.dataset.root_path,
                                            "networks", "summaries",
-                                           "{}_{}_{}_{}".format(self.model_name, self.dataset_name,
-                                                             self.dataset_split, self.train_date))
+                                           "{}_{}_{}_{}_{}".format(self.model_name,
+                                                                   self.dataset_name.upper(),
+                                                                   "RGB" if self.data_type == "images" else "Flow",
+                                                                   "Finetuing",
+                                                                   self.train_date))
         self.train_summary_file_path = os.path.join(self.summary_folder, "train_summary")
         self.validation_summary_file_path = os.path.join(self.summary_folder, "validation_summary")
 
@@ -456,61 +470,30 @@ class Networks:
         else:
             self.starter_learning_rate = 1.0e-2
 
-        if self.data_type == "images":
-            if self.dataset_name == "ucf101":
-                if self.optimizer_type == "Adam":
-                    boundaries = [70, 150]
-                else:
-                    # boundaries = [14, 16]
-                    boundaries = [20, 23]
-            else:
-                if self.optimizer_type == "Adam":
-                    boundaries = [20, 35]
-                else:
-                    boundaries = [40, 65]
-            values = [self.starter_learning_rate,
-                      self.starter_learning_rate * 1.0e-1,
-                      self.starter_learning_rate * 1.0e-2]
+        if self.dataset_name == "ucf101":
+            boundaries = [20, 23]
         else:
-            if self.dataset_name == "ucf101":
-                if self.optimizer_type == "Adam":
-                    boundaries = [70, 150, 200, 250, 290]
-                else:
-                    boundaries = [120, 250, 300, 370, 420]
-            else:
-                if self.optimizer_type == "Adam":
-                    boundaries = [20, 35, 50, 60, 70]
-                else:
-                    boundaries = [40, 65, 80, 100, 110]
-            values = [self.starter_learning_rate,
-                      self.starter_learning_rate * 1.0e-1,
-                      self.starter_learning_rate * 1.0e-2,
-                      self.starter_learning_rate * 1.0e-1,
-                      self.starter_learning_rate * 1.0e-2,
-                      self.starter_learning_rate * 1.0e-3]
+            boundaries = [20, 23]
         self.learning_rate = tf.train.piecewise_constant(self.global_epochs, boundaries, values)
 
         global current_learning_rate
         current_learning_rate = list()
 
-        if self.optimizer_type == "Adam":
-            self.optimizer = self.AdamOptimizer(learning_rate=self.learning_rate)
-        else:
-            self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
-                                                        momentum=0.9)
+        self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
+                                                    momentum=0.9)
 
-        self.i3d = self.I3D(self, is_training=True, data_type=self.data_type)
-        self.i3d_validation = self.I3D(self, is_training=False, data_type=self.data_type)
-        self.i3d.build_model()
-        self.i3d_validation.build_model()
+        self.model = self.Model(self, is_training=True, phase="pretraining", data_type=self.data_type)
+        self.model_validation = self.Model(self, is_training=False, phase="pretraining", data_type=self.data_type)
+        self.model.build_model()
+        self.model_validation.build_model()
 
         self.parameters = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
 
-        load_parameters = dict()
-        for param in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
-            if "I3D" in param.name:
-                key_name = param.name.replace(self.model_name + "/", "")[:-2]
-                load_parameters[key_name] = param
+        # load_parameters = dict()
+        # for param in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
+        #     if "I3D" in param.name:
+        #         key_name = param.name.replace(self.model_name + "/", "")[:-2]
+        #         load_parameters[key_name] = param
 
         self.parameter_dict = dict()
         for parameter in self.parameters:
@@ -520,7 +503,7 @@ class Networks:
 
         with tf.control_dependencies(update_ops):
             with tf.device("/cpu:0"):
-                self.train_step = self.optimizer.apply_gradients(self.i3d.average_grads,
+                self.train_step = self.optimizer.apply_gradients(self.model.average_grads,
                                                                  global_step=self.global_step)
 
         with tf.device("/cpu:0"):
@@ -557,9 +540,8 @@ class Networks:
         self.best_validation = float("-inf")
         self.previous_best_epoch = None
 
-        loader = tf.train.Saver(var_list=load_parameters)
-        saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES),
-                               max_to_keep=self.epochs)
+        loader = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.model_name))
+        saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
 
         with tf.Session() as session:
             session.run(self.train_iterator.initializer)
@@ -577,9 +559,9 @@ class Networks:
             init_variables = tf.global_variables_initializer()
             session.run(init_variables)
 
-            print("Loading Pre-trained Models ...")
-            loader.restore(session, self.load_ckpt_file_path)
-            print("Pre-trained Models are Loaded!")
+            # print("Loading Pre-trained Models ...")
+            # loader.restore(session, self.load_ckpt_file_path)
+            # print("Pre-trained Models are Loaded!")
 
             batch_iteration = 1
 
@@ -603,7 +585,7 @@ class Networks:
                     iteration_start_time = time.time()
                     preprocessing_start_time = time.time()
                     try:
-                        frame_vectors, target_vectors = \
+                        frame_vectors, target_vectors, masks = \
                             session.run(self.train_next_element)
                     except tf.errors.OutOfRangeError:
                         break
@@ -632,12 +614,12 @@ class Networks:
                     current_lr = \
                         session.run(
                             [self.train_step,
-                             self.i3d.loss,
-                             self.i3d.accuracy,
-                             self.i3d.predictions,
+                             self.model.loss,
+                             self.model.accuracy,
+                             self.model.predictions,
                              current_learning_rate],
-                            feed_dict={self.i3d.frames: frame_vectors,
-                                       self.i3d.targets: target_vectors
+                            feed_dict={self.model.frames: frame_vectors,
+                                       self.model.targets: target_vectors
                                        })
 
                     epoch_training_time += time.time() - train_step_start_time
@@ -727,17 +709,18 @@ class Networks:
 
                     for validation_batch_index in range(loop_rounds):
                         try:
-                            frame_vectors, target_vectors, identities = session.run(self.validation_next_element)
+                            frame_vectors, target_vectors, masks, identities = \
+                                session.run(self.validation_next_element)
                         except tf.errors.OutOfRangeError:
                             break
 
                         loss, accuracy, predictions = \
                             session.run(
-                                [self.i3d_validation.loss,
-                                 self.i3d_validation.accuracy,
-                                 self.i3d_validation.predictions],
-                                feed_dict={self.i3d_validation.frames: frame_vectors,
-                                           self.i3d_validation.targets: target_vectors
+                                [self.model_validation.loss,
+                                 self.model_validation.accuracy,
+                                 self.model_validation.predictions],
+                                feed_dict={self.model_validation.frames: frame_vectors,
+                                           self.model_validation.targets: target_vectors
                                            })
 
                         validation_loss += loss
@@ -785,8 +768,7 @@ class Networks:
                     validation_summary = \
                         session.run(self.validation_summaries,
                                     feed_dict={self.loss_summary_ph: validation_loss,
-                                               self.accuracy_summary_ph: validation_accuracy
-                                               })
+                                               self.accuracy_summary_ph: validation_accuracy})
                     self.validation_summary_writer.add_summary(validation_summary, epoch)
 
                     validation_quality = 0.5 * validation_accuracy - 0.5 * validation_loss
