@@ -77,8 +77,8 @@ class Networks:
                          "networks", "weights",
                          "save", "{}_{}_{}_{}_{}".format(self.model_name,
                                                          self.dataset_name.upper(),
-                                                         "Pretraining",
                                                          "RGB" if self.data_type == "images" else "Flow",
+                                                         "Pretraining",
                                                          self.train_date))
 
         self.summary_folder = os.path.join(self.dataset.root_path,
