@@ -44,24 +44,15 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            if self.optimizer_type == "Adam":
-                self.epochs = 200 if self.data_type == "images" else 300
-            else:
-                self.epochs = 25 if self.data_type == "images" else 100
+            self.epochs = 25
         else:
-            if self.optimizer_type == "Adam":
-                self.epochs = 50 if self.data_type == "images" else 80
-            else:
-                self.epochs = 80 if self.data_type == "images" else 120
+            self.epochs = 25
         self.temporal_width = 64
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
 
-        if self.data_type == "images":
-            self.model_name = "UCF_RGB"
-        elif self.data_type == "flows":
-            self.model_name = "UCF_Flow"
+        self.model_name = "I3D"
         now = time.localtime()
         self.train_date = "{:02d}{:02d}".format(now.tm_mon, now.tm_mday)
 
@@ -85,19 +76,16 @@ class Networks:
             os.path.join(self.dataset.root_path,
                          "networks", "weights",
                          "save", "{}_{}_{}_{}".format(self.model_name,
-                                                      self.dataset_name,
-                                                      self.dataset_split,
+                                                      self.dataset_name.upper(),
+                                                      "RGB" if self.data_type == "images" else "Flow",
                                                       self.train_date))
-        if self.data_type == "images":
-            self.load_ckpt_file_path = os.path.join(self.dataset.root_path, "cnn/I3D/rgb", "model.ckpt")
-        elif self.data_type == "flows":
-            self.load_ckpt_file_path = os.path.join(self.dataset.root_path, "cnn/I3D/flow", "model.ckpt")
-        else:
-            self.load_ckpt_file_path = os.path.join(self.dataset.root_path, "cnn/I3D/rgb", "model.ckpt")
+
         self.summary_folder = os.path.join(self.dataset.root_path,
                                            "networks", "summaries",
-                                           "{}_{}_{}_{}".format(self.model_name, self.dataset_name,
-                                                             self.dataset_split, self.train_date))
+                                           "{}_{}_{}_{}".format(self.model_name,
+                                                                self.dataset_name.upper(),
+                                                                "RGB" if self.data_type == "images" else "Flow",
+                                                                self.train_date))
         self.train_summary_file_path = os.path.join(self.summary_folder, "train_summary")
         self.validation_summary_file_path = os.path.join(self.summary_folder, "validation_summary")
 
@@ -108,53 +96,25 @@ class Networks:
         else:
             self.starter_learning_rate = 1.0e-2
 
-        if self.data_type == "images":
-            if self.dataset_name == "ucf101":
-                if self.optimizer_type == "Adam":
-                    boundaries = [70, 150]
-                else:
-                    # boundaries = [14, 16]
-                    boundaries = [20, 23]
-            else:
-                if self.optimizer_type == "Adam":
-                    boundaries = [20, 35]
-                else:
-                    boundaries = [40, 65]
-            values = [self.starter_learning_rate,
-                      self.starter_learning_rate * 1.0e-1,
-                      self.starter_learning_rate * 1.0e-2]
+        if self.dataset_name == "ucf101":
+            boundaries = [20, 23]
         else:
-            if self.dataset_name == "ucf101":
-                if self.optimizer_type == "Adam":
-                    boundaries = [70, 150, 200, 250, 290]
-                else:
-                    boundaries = [120, 250, 300, 370, 420]
-            else:
-                if self.optimizer_type == "Adam":
-                    boundaries = [20, 35, 50, 60, 70]
-                else:
-                    boundaries = [40, 65, 80, 100, 110]
-            values = [self.starter_learning_rate,
-                      self.starter_learning_rate * 1.0e-1,
-                      self.starter_learning_rate * 1.0e-2,
-                      self.starter_learning_rate * 1.0e-1,
-                      self.starter_learning_rate * 1.0e-2,
-                      self.starter_learning_rate * 1.0e-3]
+            boundaries = [20, 23]
+        values = [self.starter_learning_rate,
+                  self.starter_learning_rate * 1.0e-1,
+                  self.starter_learning_rate * 1.0e-2]
         self.learning_rate = tf.train.piecewise_constant(self.global_epochs, boundaries, values)
 
         global current_learning_rate
         current_learning_rate = list()
 
-        if self.optimizer_type == "Adam":
-            self.optimizer = self.AdamOptimizer(learning_rate=self.learning_rate)
-        else:
-            self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
-                                                        momentum=0.9)
+        self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
+                                                    momentum=0.9)
 
-        self.i3d = self.I3D(self, is_training=True, phase="pretraining", data_type=self.data_type)
-        self.i3d_validation = self.I3D(self, is_training=False, phase="pretraining", data_type=self.data_type)
-        self.i3d.build_model()
-        self.i3d_validation.build_model()
+        self.model = self.Model(self, is_training=True, phase="pretraining", data_type=self.data_type)
+        self.model_validation = self.Model(self, is_training=False, phase="pretraining", data_type=self.data_type)
+        self.model.build_model()
+        self.model_validation.build_model()
 
         self.parameters = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
 
@@ -262,12 +222,12 @@ class Networks:
                     current_lr = \
                         session.run(
                             [self.train_step,
-                             self.i3d.loss,
-                             self.i3d.solver_loss,
-                             self.i3d.reconstruction_loss,
+                             self.model.loss,
+                             self.model.solver_loss,
+                             self.model.reconstruction_loss,
                              current_learning_rate],
-                            feed_dict={self.i3d.frames: frame_vectors,
-                                       self.i3d.masks: masks})
+                            feed_dict={self.model.frames: frame_vectors,
+                                       self.model.masks: masks})
 
                     epoch_training_time += time.time() - train_step_start_time
                     epoch_loss += loss
@@ -346,11 +306,11 @@ class Networks:
 
                         loss, solver_loss, reconstruction_loss = \
                             session.run(
-                                [self.i3d_validation.loss,
-                                 self.i3d_validation.solver_loss,
-                                 self.i3d_validation.reconstruction_loss],
-                                feed_dict={self.i3d_validation.frames: frame_vectors,
-                                           self.i3d_validation.masks: masks})
+                                [self.model_validation.loss,
+                                 self.model_validation.solver_loss,
+                                 self.model_validation.reconstruction_loss],
+                                feed_dict={self.model_validation.frames: frame_vectors,
+                                           self.model_validation.masks: masks})
 
                         validation_loss += loss
                         validation_solver_loss += solver_loss
@@ -436,15 +396,9 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            if self.optimizer_type == "Adam":
-                self.epochs = 200 if self.data_type == "images" else 300
-            else:
-                self.epochs = 25 if self.data_type == "images" else 100
+            self.epochs = 25
         else:
-            if self.optimizer_type == "Adam":
-                self.epochs = 50 if self.data_type == "images" else 80
-            else:
-                self.epochs = 80 if self.data_type == "images" else 120
+            self.epochs = 25
         self.temporal_width = 16
         self.display_term = 1
         self.dtype = tf.float32
@@ -2230,7 +2184,7 @@ class Networks:
 
             return super(Networks.AdamOptimizer, self)._apply_dense(grad, var)
 
-    class I3D():
+    class Model():
 
         def __init__(self, networks, is_training, phase, data_type,
                      batch_size=None, device_id=None, num_classes=None):
@@ -2321,7 +2275,6 @@ class Networks:
                 self.masks = tf.placeholder(dtype=tf.float32,
                                             shape=(batch_size, 8),
                                             name="masks")
-
 
             self.end_points = dict()
             for device_id in range(self.num_gpus):
