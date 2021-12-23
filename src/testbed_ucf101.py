@@ -1766,8 +1766,8 @@ class Networks:
                     frame_vectors = np.transpose(frame_vectors, [3, 0, 1, 2])
                 target = np.array(class_index, dtype=np.int64)
 
-                masks = np.ones(dtype=np.float32, shape=(self.dataset.networks.temporal_width // (2 ** 2)))
-                random_index = random.choice(range(self.dataset.networks.temporal_width // (2 ** 2)))
+                masks = np.ones(dtype=np.float32, shape=(8, ))
+                random_index = random.choice(range(8))
                 masks[random_index] = 0.0
 
                 return frame_vectors, target, masks
@@ -1968,8 +1968,8 @@ class Networks:
 
                 target = np.array(class_index, dtype=np.int64)
 
-                masks = np.ones(dtype=np.float32, shape=(self.dataset.networks.temporal_width // (2 ** 2)))
-                random_index = random.choice(range(self.dataset.networks.temporal_width // (2 ** 2)))
+                masks = np.ones(dtype=np.float32, shape=(8,))
+                random_index = random.choice(range(8))
                 masks[random_index] = 0.0
 
                 return frame_vectors, target, masks, identities
