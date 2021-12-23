@@ -83,10 +83,11 @@ class Networks:
 
         self.summary_folder = os.path.join(self.dataset.root_path,
                                            "networks", "summaries",
-                                           "{}_{}_{}_{}".format(self.model_name,
-                                                                self.dataset_name.upper(),
-                                                                "RGB" if self.data_type == "images" else "Flow",
-                                                                self.train_date))
+                                           "{}_{}_{}_{}_{}".format(self.model_name,
+                                                                   self.dataset_name.upper(),
+                                                                   "RGB" if self.data_type == "images" else "Flow",
+                                                                   "Pretraining",
+                                                                   self.train_date))
         self.train_summary_file_path = os.path.join(self.summary_folder, "train_summary")
         self.validation_summary_file_path = os.path.join(self.summary_folder, "validation_summary")
 
