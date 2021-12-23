@@ -127,7 +127,7 @@ class Networks:
 
         with tf.control_dependencies(update_ops):
             with tf.device("/cpu:0"):
-                self.train_step = self.optimizer.apply_gradients(self.i3d.average_grads,
+                self.train_step = self.optimizer.apply_gradients(self.model.average_grads,
                                                                  global_step=self.global_step)
 
         with tf.device("/cpu:0"):
