@@ -2332,13 +2332,13 @@ class Networks:
                             else:
                                 inputs = self.frames
 
-                            net, end_points = I3D.build_model(inputs=inputs,
-                                                              weight_decay=self.weight_decay,
-                                                              end_points=self.end_points,
-                                                              dtype=self.networks.dtype,
-                                                              dformat=self.networks.dformat,
-                                                              is_training=self.is_training,
-                                                              scope=self.i3d_name)
+                            net = I3D.build_model(inputs=inputs,
+                                                  weight_decay=self.weight_decay,
+                                                  end_points=self.end_points,
+                                                  dtype=self.networks.dtype,
+                                                  dformat=self.networks.dformat,
+                                                  is_training=self.is_training,
+                                                  scope=self.i3d_name)
 
                             if self.phase == "pretraining":
                                 masks = self.masks[self.batch_size * device_id:
@@ -2539,7 +2539,8 @@ class Networks:
                                                                                     trainable=self.is_training)
                                                 net = tf.nn.relu(net)
 
-                                    low_level_features = end_points["MaxPool_3a_1x3x3"]
+                                    low_level_features = self.end_points["MaxPool_3a_1x3x3"][
+                                                         self.batch_size * device_id:self.batch_size * (device_id + 1)]
 
                                     with tf.variable_scope("ReconstructionLogits", reuse=tf.AUTO_REUSE):
                                         C = net.get_shape().as_list()[-1]

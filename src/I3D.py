@@ -316,7 +316,7 @@ def build_model(inputs, weight_decay, end_points, dtype, dformat, is_training, s
         except KeyError:
             end_points[end_point] = net
 
-        return net, end_points
+        return net
 
 
 def inception(x, branches, is_training,
