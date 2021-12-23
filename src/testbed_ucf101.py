@@ -406,10 +406,7 @@ class Networks:
         self.dtype = tf.float32
         self.dformat = "NCDHW"
 
-        if self.data_type == "images":
-            self.model_name = "UCF_RGB"
-        elif self.data_type == "flows":
-            self.model_name = "UCF_Flow"
+        self.model_name = "I3D"
         now = time.localtime()
         self.train_date = "{:02d}{:02d}".format(now.tm_mon, now.tm_mday)
 
@@ -442,7 +439,8 @@ class Networks:
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "1223"))
+                                                         "1223"),
+                                                "weights.ckpt-{}".format(25))
 
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
@@ -559,12 +557,12 @@ class Networks:
             self.validation_summary_writer = tf.summary.FileWriter(self.validation_summary_file_path)
 
             # Initialize all the variables
-            init_variables = tf.global_variables_initializer()
-            session.run(init_variables)
+            # init_variables = tf.global_variables_initializer()
+            # session.run(init_variables)
 
-            # print("Loading Pre-trained Models ...")
-            # loader.restore(session, self.load_ckpt_file_path)
-            # print("Pre-trained Models are Loaded!")
+            print("Loading Pre-trained Models ...")
+            loader.restore(session, self.load_ckpt_file_path)
+            print("Pre-trained Models are Loaded!")
 
             batch_iteration = 1
 
