@@ -75,10 +75,11 @@ class Networks:
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
                          "networks", "weights",
-                         "save", "{}_{}_{}_{}".format(self.model_name,
-                                                      self.dataset_name.upper(),
-                                                      "RGB" if self.data_type == "images" else "Flow",
-                                                      self.train_date))
+                         "save", "{}_{}_{}_{}_{}".format(self.model_name,
+                                                         self.dataset_name.upper(),
+                                                         "Pretraining",
+                                                         "RGB" if self.data_type == "images" else "Flow",
+                                                         self.train_date))
 
         self.summary_folder = os.path.join(self.dataset.root_path,
                                            "networks", "summaries",
