@@ -485,8 +485,8 @@ class Networks:
         self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
                                                     momentum=0.9)
 
-        self.model = self.Model(self, is_training=True, phase="pretraining", data_type=self.data_type)
-        self.model_validation = self.Model(self, is_training=False, phase="pretraining", data_type=self.data_type)
+        self.model = self.Model(self, is_training=True, phase="finetuning", data_type=self.data_type)
+        self.model_validation = self.Model(self, is_training=False, phase="finetuning", data_type=self.data_type)
         self.model.build_model()
         self.model_validation.build_model()
 
