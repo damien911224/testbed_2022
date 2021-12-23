@@ -557,8 +557,8 @@ class Networks:
             self.validation_summary_writer = tf.summary.FileWriter(self.validation_summary_file_path)
 
             # Initialize all the variables
-            # init_variables = tf.global_variables_initializer()
-            # session.run(init_variables)
+            init_variables = tf.global_variables_initializer()
+            session.run(init_variables)
 
             print("Loading Pre-trained Models ...")
             loader.restore(session, self.load_ckpt_file_path)
