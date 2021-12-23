@@ -474,6 +474,9 @@ class Networks:
             boundaries = [20, 23]
         else:
             boundaries = [20, 23]
+        values = [self.starter_learning_rate,
+                  self.starter_learning_rate * 1.0e-1,
+                  self.starter_learning_rate * 1.0e-2]
         self.learning_rate = tf.train.piecewise_constant(self.global_epochs, boundaries, values)
 
         global current_learning_rate
