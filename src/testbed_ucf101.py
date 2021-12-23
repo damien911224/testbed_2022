@@ -2572,6 +2572,7 @@ class Networks:
                                     self.reconstruction_loss += reconstruction_loss
 
                                 loss = self.solver_gamma * solver_loss + reconstruction_loss
+                                self.loss += loss
                             else:
                                 end_point = "Logits"
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
