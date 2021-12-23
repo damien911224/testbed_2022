@@ -490,11 +490,11 @@ class Networks:
 
         self.parameters = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
 
-        # load_parameters = dict()
-        # for param in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
-        #     if "I3D" in param.name:
-        #         key_name = param.name.replace(self.model_name + "/", "")[:-2]
-        #         load_parameters[key_name] = param
+        load_parameters = dict()
+        for param in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.model_name):
+            if "Logits" not in param.name:
+                key_name = param.name.replace(self.model_name + "/", "")[:-2]
+                load_parameters[key_name] = param
 
         self.parameter_dict = dict()
         for parameter in self.parameters:
@@ -541,7 +541,7 @@ class Networks:
         self.best_validation = float("-inf")
         self.previous_best_epoch = None
 
-        loader = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.model_name))
+        loader = tf.train.Saver(var_list=load_parameters)
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
 
         with tf.Session() as session:
