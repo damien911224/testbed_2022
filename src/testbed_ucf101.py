@@ -35,7 +35,7 @@ class Networks:
         print("=" * 90)
 
         self.is_server = True
-        self.batch_size = 16 if self.is_server else 2
+        self.batch_size = 8 if self.is_server else 2
         self.num_gpus = 4 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
@@ -297,6 +297,7 @@ class Networks:
 
                     epoch_time += time.time() - iteration_start_time
 
+                print()
                 epoch_loss /= float(epoch_batch_iteration)
                 epoch_solver_loss /= float(epoch_batch_iteration)
                 epoch_reconstruction_loss /= float(epoch_batch_iteration)
@@ -372,6 +373,7 @@ class Networks:
                         sys.stdout.write("\r" + print_string)
                         sys.stdout.flush()
 
+                    print()
                     validation_loss /= float(loop_rounds)
                     validation_solver_loss /= float(loop_rounds)
                     validation_reconstruction_loss /= float(loop_rounds)
