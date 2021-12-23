@@ -2544,7 +2544,7 @@ class Networks:
                                                                  if self.networks.dformat == "NDHWC"
                                                                  else [1, self.num_classes,
                                                                        1, 1, 1],
-                                                                 initializer=bias_initilizer,
+                                                                 initializer=bias_initializer,
                                                                  regularizer=bias_regularizer,
                                                                  trainable=self.is_training)
                                         conv = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
