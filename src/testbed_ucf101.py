@@ -53,10 +53,10 @@ class Networks:
                 self.epochs = 50 if self.data_type == "images" else 80
             else:
                 self.epochs = 80 if self.data_type == "images" else 120
-        self.temporal_width = 16
+        self.temporal_width = 64
         self.display_term = 1
         self.dtype = tf.float32
-        self.dformat = "NCDHW"
+        self.dformat = "NDHWC"
 
         if self.data_type == "images":
             self.model_name = "UCF_RGB"
@@ -183,18 +183,23 @@ class Networks:
 
             self.loss_summary_ph = tf.placeholder(dtype=tf.float32)
             self.loss_summary = tf.summary.scalar("loss", self.loss_summary_ph)
-            self.accuracy_summary_ph = tf.placeholder(dtype=tf.float32)
-            self.accuracy_summary = tf.summary.scalar("accuracy", self.accuracy_summary_ph)
+            self.solver_loss_summary_ph = tf.placeholder(dtype=tf.float32)
+            self.solver_loss_summary = tf.summary.scalar("solver_loss", self.solver_loss_summary_ph)
+            self.reconstruction_loss_summary_ph = tf.placeholder(dtype=tf.float32)
+            self.reconstruction_loss_summary = tf.summary.scalar("reconstruction", self.reconstruction_loss_summary_ph)
             self.current_learning_rate_ph = tf.placeholder(dtype=tf.float32)
             self.current_learning_rate_summary = tf.summary.scalar("current_learning_rate",
                                                                    self.current_learning_rate_ph)
 
-            self.train_summaries = tf.summary.merge([self.variable_summary, self.loss_summary,
-                                                     self.accuracy_summary,
+            self.train_summaries = tf.summary.merge([self.variable_summary,
+                                                     self.loss_summary,
+                                                     self.solver_loss_summary,
+                                                     self.reconstruction_loss_summary,
                                                      self.current_learning_rate_summary])
 
             self.validation_summaries = tf.summary.merge([self.loss_summary,
-                                                          self.accuracy_summary])
+                                                          self.solver_loss_summary,
+                                                          self.reconstruction_loss_summary])
 
         os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join([str(device_id) for device_id in range(self.num_gpus)])
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -203,8 +208,7 @@ class Networks:
         self.best_validation = float("-inf")
         self.previous_best_epoch = None
 
-        saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES),
-                               max_to_keep=self.epochs)
+        saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
 
         with tf.Session() as session:
             session.run(self.train_iterator.initializer)
@@ -230,7 +234,8 @@ class Networks:
             for epoch in range(1, self.epochs + 1, 1):
                 session.run([self.train_iterator.initializer, self.global_epochs.assign(epoch)])
                 epoch_loss = 0.0
-                epoch_accuracy = 0.0
+                epoch_solver_loss = 0.0
+                epoch_reconstruction_loss = 0.0
                 epoch_learning_rate = 0.0
                 epoch_batch_iteration = 0
                 epoch_time = 0.0
@@ -244,99 +249,65 @@ class Networks:
                     iteration_start_time = time.time()
                     preprocessing_start_time = time.time()
                     try:
-                        frame_vectors, target_vectors = \
-                            session.run(self.train_next_element)
+                        frame_vectors, target_vectors, masks = session.run(self.train_next_element)
                     except tf.errors.OutOfRangeError:
                         break
-
-                    if len(frame_vectors) < self.batch_size * self.num_gpus:
-                        frame_vectors = np.concatenate([frame_vectors,
-                                                        np.repeat(np.expand_dims(np.zeros_like(frame_vectors[0]),
-                                                                                 axis=0),
-                                                                  self.batch_size * self.num_gpus - len(frame_vectors),
-                                                                  axis=0)],
-                                                       axis=0)
-                        target_vectors = np.concatenate([target_vectors,
-                                                         np.repeat(np.expand_dims(np.zeros_like(target_vectors[0]),
-                                                                                  axis=0),
-                                                                   self.batch_size * self.num_gpus - len(
-                                                                       target_vectors),
-                                                                   axis=0)],
-                                                        axis=0)
 
                     epoch_preprocessing_time += time.time() - preprocessing_start_time
 
                     train_step_start_time = time.time()
                     _, loss, \
-                    accuracy, \
-                    predictions, \
+                    solver_loss, \
+                    reconstruction_loss, \
                     current_lr = \
                         session.run(
                             [self.train_step,
                              self.i3d.loss,
-                             self.i3d.accuracy,
-                             self.i3d.predictions,
+                             self.i3d.solver_loss,
+                             self.i3d.reconstruction_loss,
                              current_learning_rate],
                             feed_dict={self.i3d.frames: frame_vectors,
-                                       self.i3d.targets: target_vectors
-                                       })
+                                       self.i3d.masks: masks})
 
                     epoch_training_time += time.time() - train_step_start_time
                     epoch_loss += loss
-                    epoch_accuracy += accuracy
+                    epoch_solver_loss += solver_loss
+                    epoch_reconstruction_loss += reconstruction_loss
                     epoch_learning_rate += current_lr
 
-                    if (batch_iteration) % self.display_term == 0:
-                        predictions = np.argmax(predictions, axis=-1)
-                        targets = target_vectors
-
-                        if len(predictions) < 3:
-                            show_indices = range(0, len(predictions), 1)
-                            for _ in range(3 - len(predictions)):
-                                show_indices.append(random.sample(range(0, len(predictions), 1), 1)[0])
-                        else:
-                            show_indices = random.sample(range(0, len(predictions), 1), 3)
-                        show_indices.sort()
-
-                        target_labels = \
-                            [self.dataset.label_dic[str(targets[show_index])]
-                             for show_index in show_indices]
-                        prediction_labels = \
-                            [self.dataset.label_dic[str(predictions[show_index])]
-                             for show_index in show_indices]
-
-                        print("{:<20s}: {:05d} |{:<20s}: {:03d}({:03d}/{:03d})\n" \
-                              "{:<20s}: {:.9f}/{:.5f} ({:f})\n" \
-                              "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}\n" \
-                              "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}\n" \
-                              "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}".format(
-                            "Epochs", epoch, "Batch Iterations", batch_iteration,
-                            epoch_batch_iteration + 1, batch_length,
-                            "Loss", loss, accuracy, current_lr,
-                            show_indices[0] + 1, target_labels[0], show_indices[0] + 1, prediction_labels[0],
-                            show_indices[1] + 1, target_labels[1], show_indices[1] + 1, prediction_labels[1],
-                            show_indices[2] + 1, target_labels[2], show_indices[2] + 1, prediction_labels[2]))
+                    print_string = \
+                        "|{:10s}|Epoch {:3d}/{:3d}|Batch {:3d}/{:3d}|Loss: {:.2f}".format(
+                            "Training",
+                            epoch,
+                            self.epochs,
+                            epoch_batch_iteration + 1,
+                            batch_length,
+                            loss)
+                    progress_step = epoch_batch_iteration + 1
+                    progress_length = batch_length
+                    print_string += \
+                        " |{}{}|".format(
+                            "=" * int(round(37.0 * float(progress_step) / float(progress_length))),
+                            " " * (37 - int(round(37.0 * float(progress_step) / float(progress_length)))))
+                    sys.stdout.write("\r" + print_string)
+                    sys.stdout.flush()
 
                     epoch_batch_iteration += 1
                     batch_iteration += 1
 
                     epoch_time += time.time() - iteration_start_time
-                    print("Pre-processing Time: {:.5f}".format(epoch_preprocessing_time /
-                                                               epoch_batch_iteration))
-                    print("Training Time: {:.5f}".format(epoch_training_time /
-                                                         epoch_batch_iteration))
-                    print("One-Iteration Time: {:.5f}".format(epoch_time /
-                                                              epoch_batch_iteration))
 
                 epoch_loss /= float(epoch_batch_iteration)
-                epoch_accuracy /= float(epoch_batch_iteration)
+                epoch_solver_loss /= float(epoch_batch_iteration)
+                epoch_reconstruction_loss /= float(epoch_batch_iteration)
                 epoch_learning_rate /= float(epoch_batch_iteration)
                 epoch_training_time /= float(epoch_batch_iteration)
                 epoch_preprocessing_time /= float(epoch_batch_iteration)
 
                 train_summary = session.run(self.train_summaries,
                                             feed_dict={self.loss_summary_ph: epoch_loss,
-                                                       self.accuracy_summary_ph: epoch_accuracy,
+                                                       self.solver_loss_summary_ph: epoch_solver_loss,
+                                                       self.reconstruction_loss_summary_ph: epoch_reconstruction_loss,
                                                        self.current_learning_rate_ph: epoch_learning_rate
                                                        })
                 self.train_summary_writer.add_summary(train_summary, epoch)
@@ -360,77 +331,59 @@ class Networks:
                     print("Validation on Epochs {:05d}".format(epoch))
 
                     validation_loss = 0.0
-                    validation_accuracy = 0.0
+                    validation_solver_loss = 0.0
+                    validation_reconstruction_loss = 0.0
 
                     loop_rounds = max(int(math.ceil(float(self.validation_size) /
-                                                    float(self.validation_batch_size * self.num_gpus))),
-                                      1)
+                                                    float(self.validation_batch_size * self.num_gpus))), 1)
 
                     for validation_batch_index in range(loop_rounds):
                         try:
-                            frame_vectors, target_vectors, identities = session.run(self.validation_next_element)
+                            frame_vectors, target_vectors, masks, identities = session.run(self.validation_next_element)
                         except tf.errors.OutOfRangeError:
                             break
 
-                        loss, accuracy, predictions = \
+                        loss, solver_loss, reconstruction_loss = \
                             session.run(
                                 [self.i3d_validation.loss,
-                                 self.i3d_validation.accuracy,
-                                 self.i3d_validation.predictions],
+                                 self.i3d_validation.solver_loss,
+                                 self.i3d_validation.reconstruction_loss],
                                 feed_dict={self.i3d_validation.frames: frame_vectors,
-                                           self.i3d_validation.targets: target_vectors
-                                           })
+                                           self.i3d_validation.masks: masks})
 
                         validation_loss += loss
-                        validation_accuracy += accuracy
+                        validation_solver_loss += solver_loss
+                        validation_reconstruction_loss += reconstruction_loss
 
-                        if (validation_batch_index + 1) % self.validation_display_term == 0:
-                            predictions = np.argmax(predictions, axis=-1)
-                            targets = target_vectors
-
-                            if len(predictions) < 3:
-                                show_indices = range(0, len(predictions), 1)
-                                for _ in range(3 - len(predictions)):
-                                    show_indices.append(random.sample(range(0, len(predictions), 1), 1)[0])
-                            else:
-                                show_indices = random.sample(range(0, len(predictions), 1), 3)
-                            show_indices.sort()
-
-                            target_labels = \
-                                [self.dataset.label_dic[str(targets[show_index])]
-                                 for show_index in show_indices]
-                            prediction_labels = \
-                                [self.dataset.label_dic[str(predictions[show_index])]
-                                 for show_index in show_indices]
-
-                            print(
-                                "{:<20s}: {:05d} |{:<20s}: {:03d}/{:03d}\n" \
-                                "{:<20s}: {:.9f}/{:.5f} ({})\n" \
-                                "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}\n" \
-                                "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}\n" \
-                                "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}".format(
-                                    "Epochs", epoch, "Batch Iterations",
-                                    validation_batch_index + 1, loop_rounds,
-                                    "Loss", loss, accuracy,
-                                    "VALIDATION",
-                                    show_indices[0] + 1, target_labels[0],
-                                    show_indices[0] + 1, prediction_labels[0],
-                                    show_indices[1] + 1, target_labels[1],
-                                    show_indices[1] + 1, prediction_labels[1],
-                                    show_indices[2] + 1, target_labels[2],
-                                    show_indices[2] + 1, prediction_labels[2]))
+                        print_string = \
+                            "|{:10s}|Epoch {:3d}/{:3d}|Batch {:3d}/{:3d}|Loss: {:.2f}".format(
+                                "Validation",
+                                epoch,
+                                self.epochs,
+                                validation_batch_index + 1,
+                                loop_rounds,
+                                loss)
+                        progress_step = validation_batch_index + 1
+                        progress_length = loop_rounds
+                        print_string += \
+                            " |{}{}|".format(
+                                "=" * int(round(37.0 * float(progress_step) / float(progress_length))),
+                                " " * (37 - int(round(37.0 * float(progress_step) / float(progress_length)))))
+                        sys.stdout.write("\r" + print_string)
+                        sys.stdout.flush()
 
                     validation_loss /= float(loop_rounds)
-                    validation_accuracy /= float(loop_rounds)
+                    validation_solver_loss /= float(loop_rounds)
+                    validation_reconstruction_loss /= float(loop_rounds)
 
                     validation_summary = \
                         session.run(self.validation_summaries,
                                     feed_dict={self.loss_summary_ph: validation_loss,
-                                               self.accuracy_summary_ph: validation_accuracy
-                                               })
+                                               self.solver_loss_summary_ph: validation_solver_loss,
+                                               self.reconstruction_loss_summary_ph: validation_reconstruction_loss})
                     self.validation_summary_writer.add_summary(validation_summary, epoch)
 
-                    validation_quality = 0.5 * validation_accuracy - 0.5 * validation_loss
+                    validation_quality = -validation_loss
 
                     if epoch % self.ckpt_save_term == 0:
                         # if self.previous_best_epoch and self.previous_best_epoch != epoch - self.ckpt_save_term:
@@ -464,7 +417,6 @@ class Networks:
 
                     print("Validation Results ...")
                     print("Validation Loss {:.5f}".format(validation_loss))
-                    print("Validation Accuracy {:.5f}".format(validation_accuracy))
                     print("=" * 90)
 
     def finetune(self):
@@ -1719,10 +1671,9 @@ class Networks:
                 train_dataset = train_dataset.prefetch(5 * batch_size)
                 train_dataset = train_dataset.map(lambda video:
                                                   tf.py_func(self.sample,
-                                                             [video], [tf.float32, tf.int64]),
+                                                             [video], [tf.float32, tf.int64, tf.float32]),
                                                   num_parallel_calls=self.dataset.networks.num_workers)
-                train_dataset = train_dataset.batch(batch_size=batch_size,
-                                                    drop_remainder=True)
+                train_dataset = train_dataset.batch(batch_size=batch_size, drop_remainder=True)
                 train_dataset = train_dataset.prefetch(5)
                 self.tf_dataset = train_dataset
 
@@ -1815,7 +1766,11 @@ class Networks:
                     frame_vectors = np.transpose(frame_vectors, [3, 0, 1, 2])
                 target = np.array(class_index, dtype=np.int64)
 
-                return frame_vectors, target
+                masks = np.ones(dtype=np.float32, shape=(self.dataset.networks.temporal_width // (2 ** 2)))
+                random_index = random.choice(range(self.dataset.networks.temporal_width // (2 ** 2)))
+                masks[random_index] = 0.0
+
+                return frame_vectors, target, masks
 
             def preprocessing(self, batch_datum):
                 splits = tf.string_split([batch_datum], delimiter=" ").values
@@ -1910,7 +1865,8 @@ class Networks:
                 validation_dataset = validation_dataset.prefetch(5 * batch_size)
                 validation_dataset = validation_dataset.map(lambda video:
                                                             tf.py_func(self.sample,
-                                                                       [video], [tf.float32, tf.int64, tf.string]),
+                                                                       [video], [tf.float32, tf.int64,
+                                                                                 tf.float32, tf.string]),
                                                             num_parallel_calls=self.dataset.networks.num_workers)
                 validation_dataset = validation_dataset.batch(batch_size)
                 validation_dataset = validation_dataset.prefetch(5)
@@ -2012,7 +1968,11 @@ class Networks:
 
                 target = np.array(class_index, dtype=np.int64)
 
-                return frame_vectors, target, identities
+                masks = np.ones(dtype=np.float32, shape=(self.dataset.networks.temporal_width // (2 ** 2)))
+                random_index = random.choice(range(self.dataset.networks.temporal_width // (2 ** 2)))
+                masks[random_index] = 0.0
+
+                return frame_vectors, target, masks, identities
 
             def preprocessing(self, batch_datum):
                 splits = tf.string_split([batch_datum], delimiter=" ").values
@@ -2356,7 +2316,7 @@ class Networks:
                                               shape=(batch_size, ),
                                               name="targets")
             else:
-                self.masks = tf.placeholder(dtype=tf.int64,
+                self.masks = tf.placeholder(dtype=tf.float32,
                                             shape=(batch_size, 8),
                                             name="masks")
 
@@ -2424,7 +2384,6 @@ class Networks:
                                                                  tf.expand_dims(soft_targets, axis=-1))
                                     # N, T, C
                                     gathered_words = tf.reduce_sum(gathered_words, axis=2)
-
 
                                 end_point = "Solver"
                                 net = tf.identity(gathered_words)
@@ -2504,10 +2463,10 @@ class Networks:
                                                                trainable=self.is_training)
                                         net = tf.nn.bias_add(net, bias)
 
-                                    p = net
+                                    p = tf.nn.softmax(net, axis=-1)
                                     t = soft_targets
                                     solver_loss = -tf.reduce_mean(t * tf.log(p + 1.0e-7), axis=-1)
-                                    solver_loss = tf.multiply(solver_loss, masks)
+                                    solver_loss = tf.multiply(solver_loss, 1.0 - masks)
                                     solver_loss = tf.reduce_sum(solver_loss, axis=1)
                                     solver_loss = tf.reduce_mean(solver_loss, axis=0)
 
@@ -2580,26 +2539,25 @@ class Networks:
                                                                                     trainable=self.is_training)
                                                 net = tf.nn.relu(net)
 
-                                        low_level_features = end_points["MaxPool_3a_1x3x3"]
+                                    low_level_features = end_points["MaxPool_3a_1x3x3"]
 
-                                        with tf.variable_scope("ReconstructionLogits", reuse=tf.AUTO_REUSE):
-                                            with tf.variable_scope("Conv1d_3x3_0a", reuse=tf.AUTO_REUSE):
-                                                C = net.get_shape().as_list()[-1]
-                                                target_C = low_level_features.get_shape().as_list()[-1]
-                                                kernel = tf.get_variable(name="conv_1d/kernel",
-                                                                         dtype=self.networks.dtype,
-                                                                         shape=[1, C, target_C],
-                                                                         initializer=kernel_initializer,
-                                                                         regularizer=kernel_regularizer,
-                                                                         trainable=self.is_training)
-                                                net = tf.nn.conv1d(net, kernel, [1, 1, 1], padding="SAME")
-                                                bias = tf.get_variable(name="conv_1d/bias",
-                                                                       dtype=self.networks.dtype,
-                                                                       shape=[target_C],
-                                                                       initializer=bias_initializer,
-                                                                       regularizer=bias_regularizer,
-                                                                       trainable=self.is_training)
-                                                net = tf.nn.bias_add(net, bias)
+                                    with tf.variable_scope("ReconstructionLogits", reuse=tf.AUTO_REUSE):
+                                        C = net.get_shape().as_list()[-1]
+                                        target_C = low_level_features.get_shape().as_list()[-1]
+                                        kernel = tf.get_variable(name="conv_1d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, C, target_C],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        net = tf.nn.conv1d(net, kernel, [1, 1, 1], padding="SAME")
+                                        bias = tf.get_variable(name="conv_1d/bias",
+                                                               dtype=self.networks.dtype,
+                                                               shape=[target_C],
+                                                               initializer=bias_initializer,
+                                                               regularizer=bias_regularizer,
+                                                               trainable=self.is_training)
+                                        net = tf.nn.bias_add(net, bias)
 
                                     reconstruction_loss = \
                                         tf.reduce_sum(tf.square(net -
