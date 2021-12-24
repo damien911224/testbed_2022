@@ -390,7 +390,7 @@ class Networks:
 
         self.is_server = True
         self.batch_size = 16 if self.is_server else 2
-        self.num_gpus = 2 if self.is_server else 1
+        self.num_gpus = 4 if self.is_server else 1
         self.num_workers = self.num_gpus * 20
         self.data_type = "images"
         self.dataset_name = "ucf101"
