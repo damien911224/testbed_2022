@@ -2319,7 +2319,7 @@ class Networks:
                                         tf.matmul(T_pooled,
                                                   tf.expand_dims(tf.transpose(T_codebook, (1, 0)), axis=0))
                                     # N, T, K
-                                    soft_targets = tf.nn.softmax(soft_targets, axis=-1)
+                                    soft_targets = tf.stop_gradient(tf.nn.softmax(soft_targets, axis=-1))
 
                                     gathered_words = tf.multiply(tf.reshape(T_codebook, (1, 1, K, C)),
                                                                  tf.expand_dims(soft_targets, axis=-1))
