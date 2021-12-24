@@ -35,7 +35,7 @@ class Networks:
         print("=" * 90)
 
         self.is_server = True
-        self.batch_size = 8 if self.is_server else 2
+        self.batch_size = 4 if self.is_server else 2
         self.num_gpus = 4 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
@@ -2507,7 +2507,7 @@ class Networks:
                                 end_point = "Decoder"
                                 net = tf.identity(gathered_words)
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-                                    for level_index in range(4):
+                                    for level_index in range(2):
                                         with tf.variable_scope("Level_{:02d}".format(level_index + 1)):
                                             if level_index % 2 == 0:
                                                 N, T, H, W, C = net.get_shape().as_list()
