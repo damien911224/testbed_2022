@@ -153,6 +153,15 @@ class Networks:
             self.current_learning_rate_summary = tf.summary.scalar("current_learning_rate",
                                                                    self.current_learning_rate_ph)
 
+            image_summary_size = 10 * 3
+            self.image_summary_ph = \
+                tf.placeholder(dtype=tf.uint8,
+                               shape=(image_summary_size, 224 * 2 + 10, 224, 3))
+            self.image_summary = \
+                tf.summary.image("reconstruction_images",
+                                 self.image_summary_ph,
+                                 max_outputs=image_summary_size)
+
             self.train_summaries = tf.summary.merge([self.variable_summary,
                                                      self.loss_summary,
                                                      self.solver_loss_summary,
@@ -161,7 +170,8 @@ class Networks:
 
             self.validation_summaries = tf.summary.merge([self.loss_summary,
                                                           self.solver_loss_summary,
-                                                          self.reconstruction_loss_summary])
+                                                          self.reconstruction_loss_summary,
+                                                          self.image_summary])
 
         os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join([str(device_id) for device_id in range(self.num_gpus)])
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -296,27 +306,44 @@ class Networks:
                     validation_loss = 0.0
                     validation_solver_loss = 0.0
                     validation_reconstruction_loss = 0.0
+                    reconstruction_images = list()
 
                     loop_rounds = max(int(math.ceil(float(self.validation_size) /
                                                     float(self.validation_batch_size * self.num_gpus))), 1)
 
                     for validation_batch_index in range(loop_rounds):
                         try:
-                            frame_vectors, target_vectors, masks, identities = session.run(self.validation_next_element)
+                            frame_vectors, target_vectors, masks, identities = \
+                                session.run(self.validation_next_element)
                         except tf.errors.OutOfRangeError:
                             break
 
-                        loss, solver_loss, reconstruction_loss = \
+                        loss, solver_loss, reconstruction_loss, \
+                        reconstruction_predictions = \
                             session.run(
                                 [self.model_validation.loss,
                                  self.model_validation.solver_loss,
-                                 self.model_validation.reconstruction_loss],
+                                 self.model_validation.reconstruction_loss,
+                                 self.model_validation.reconstruction_predictions],
                                 feed_dict={self.model_validation.frames: frame_vectors,
                                            self.model_validation.masks: masks})
 
                         validation_loss += loss
                         validation_solver_loss += solver_loss
                         validation_reconstruction_loss += reconstruction_loss
+
+                        if validation_batch_index < 10:
+                            sampled_indices = random.sample(range(len(frame_vectors)), 3)
+                            for n_i in sampled_indices:
+                                sampled_t = random.choice(range(self.temporal_width))
+                                t_image = np.array(((frame_vectors[n_i, sampled_t] + 1.0) / 2.0) * 255.0,
+                                                   dtype=np.uint8)
+                                p_image = np.array(
+                                    np.clip(((reconstruction_predictions[n_i, sampled_t] + 1.0) / 2.0) * 255.0,
+                                            0.0, 255.0), dtype=np.uint8)
+                                buffer = np.zeros(dtype=np.uint8, shape=(10, 224, 3))
+                                image = np.concatenate([t_image, buffer, p_image], axis=0)
+                                reconstruction_images.append(image)
 
                         print_string = \
                             "|{:10s}|Epoch {:3d}/{:3d}|Batch {:3d}/{:3d}|Loss: {:.2f}".format(
@@ -344,7 +371,8 @@ class Networks:
                         session.run(self.validation_summaries,
                                     feed_dict={self.loss_summary_ph: validation_loss,
                                                self.solver_loss_summary_ph: validation_solver_loss,
-                                               self.reconstruction_loss_summary_ph: validation_reconstruction_loss})
+                                               self.reconstruction_loss_summary_ph: validation_reconstruction_loss,
+                                               self.image_summary_ph: reconstruction_images})
                     self.validation_summary_writer.add_summary(validation_summary, epoch)
 
                     validation_quality = -validation_loss
@@ -2225,6 +2253,8 @@ class Networks:
             self.solver_loss = 0.0
             self.reconstruction_loss = 0.0
             self.predictions = list()
+            self.solver_predictions = list()
+            self.reconstruction_predictions = list()
 
             kernel_initializer = tf.contrib.layers.variance_scaling_initializer()
             kernel_regularizer = tf.contrib.layers.l2_regularizer(self.weight_decay)
@@ -2502,6 +2532,7 @@ class Networks:
                                         net = tf.nn.bias_add(net, bias)
 
                                     p = tf.nn.softmax(net, axis=-1)
+                                    self.solver_predictions.append(p)
                                     t = tf.stop_gradient(solver_targets)
                                     solver_loss = -tf.reduce_mean(t * tf.log(p + 1.0e-7), axis=-1)
                                     solver_loss = tf.multiply(solver_loss, 1.0 - masks)
@@ -2613,6 +2644,8 @@ class Networks:
                                     net = tf.reshape(net, (N * target_T, H, W, C))
                                     net = tf.image.resize_bilinear(net, size=(target_H, target_W))
                                     net = tf.reshape(net, (N, target_T, target_H, target_W, C))
+
+                                    self.reconstruction_predictions.append(net)
 
                                     reconstruction_loss = tf.reduce_mean(tf.square(net - low_level_features), axis=-1)
                                     reconstruction_loss = tf.reduce_mean(reconstruction_loss, axis=(1, 2, 3))
@@ -2757,6 +2790,8 @@ class Networks:
                 if self.phase == "pretraining":
                     self.solver_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.reconstruction_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
+                    self.solver_predictions = tf.concat(self.solver_predictions, axis=0)
+                    self.reconstruction_predictions = tf.concat(self.reconstruction_predictions, axis=0)
                 else:
                     self.accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.predictions = tf.concat(self.predictions, axis=0)
