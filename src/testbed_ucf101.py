@@ -36,7 +36,7 @@ class Networks:
 
         self.is_server = True
         self.batch_size = 4 if self.is_server else 2
-        self.num_gpus = 4 if self.is_server else 1
+        self.num_gpus = 2 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
         self.dataset_name = "ucf101"
@@ -2728,7 +2728,7 @@ class Networks:
                                 for var in encoder_vars]
                             # Embedding Grads
                             embed_grads = list(zip(tf.gradients(q_loss, codebook), [codebook]))
-                            gradients = decoder_grads + encoder_grads + embed_grads,
+                            gradients = decoder_grads + encoder_grads + embed_grads
                             # if device_id == 0:
                             #     self.reg_gradients = self.networks.optimizer.compute_gradients(
                             #         tf.losses.get_regularization_loss())
