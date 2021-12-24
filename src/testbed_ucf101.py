@@ -433,14 +433,15 @@ class Networks:
                                                       self.dataset_name,
                                                       self.dataset_split,
                                                       self.train_date))
-        self.load_ckpt_file_path = os.path.join(self.dataset.root_path,
+        self.load_ckpt_file_path = \
+            os.path.join(self.dataset.root_path,
                          "networks", "weights",
                          "save", "{}_{}_{}_{}_{}".format(self.model_name,
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
                                                          "1223"),
-                                                "weights.ckpt-{}".format(25))
+                         "weights.ckpt-{}".format(25))
 
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
@@ -493,7 +494,7 @@ class Networks:
         load_parameters = dict()
         for param in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.model_name):
             if "Logits" not in param.name:
-                key_name = param.name.replace(self.model_name + "/", "")[:-2]
+                key_name = param.name[:-2]
                 load_parameters[key_name] = param
 
         self.parameter_dict = dict()
