@@ -2727,8 +2727,8 @@ class Networks:
                                     (tf.gradients(encoder_net, var, grad_z)[0] +
                                      0.25 * tf.gradients(commit_loss, var)[0] +
                                      self.solver_gamma * tf.gradients(solver_loss, var)[0], var))
-                                print("Encoder Compute Gradients ... {:2d}|{:3d}/{:3d}".format(device_id + 1,
-                                                                                               i, len(encoder_vars)))
+                                print("Encoder Compute Gradients ... {:2d}|{:3d}/{:3d}".format(
+                                    device_id + 1, i + 1, len(encoder_vars)))
                             # encoder_grads = [
                             #     (tf.gradients(encoder_net, var, grad_z)[0] +
                             #      0.25 * tf.gradients(commit_loss, var)[0] +
