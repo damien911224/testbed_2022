@@ -2556,7 +2556,7 @@ class Networks:
                                                 C = net.get_shape().as_list()[-1] \
                                                     if self.networks.dformat == "NDHWC" \
                                                     else net.get_shape().as_list()[1]
-                                                kernel = tf.get_variable(name="conv_1d/kernel",
+                                                kernel = tf.get_variable(name="conv_3d/kernel",
                                                                          dtype=self.networks.dtype,
                                                                          shape=[1, 3, 3, C, C],
                                                                          initializer=kernel_initializer,
@@ -2587,7 +2587,7 @@ class Networks:
                                         target_C = low_level_features.get_shape().as_list()[-1]
                                         kernel = tf.get_variable(name="conv_3d/kernel",
                                                                  dtype=self.networks.dtype,
-                                                                 shape=[1, C, target_C],
+                                                                 shape=[1, 1, 1, C, target_C],
                                                                  initializer=kernel_initializer,
                                                                  regularizer=kernel_regularizer,
                                                                  trainable=self.is_training)
