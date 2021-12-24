@@ -36,7 +36,7 @@ class Networks:
 
         self.is_server = True
         self.batch_size = 4 if self.is_server else 2
-        self.num_gpus = 2 if self.is_server else 1
+        self.num_gpus = 4 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
         self.dataset_name = "ucf101"
@@ -2721,11 +2721,19 @@ class Networks:
                             encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                                              scope=self.name + "/Encoder")
                             grad_z = tf.gradients(reconstruction_loss, gathered_words)
-                            encoder_grads = [
-                                (tf.gradients(encoder_net, var, grad_z)[0] +
-                                 0.25 * tf.gradients(commit_loss, var)[0] +
-                                 self.solver_gamma * tf.gradients(solver_loss, var)[0], var)
-                                for var in encoder_vars]
+                            encoder_grads = list()
+                            for i, var in enumerate(encoder_vars):
+                                encoder_grads.append(
+                                    (tf.gradients(encoder_net, var, grad_z)[0] +
+                                     0.25 * tf.gradients(commit_loss, var)[0] +
+                                     self.solver_gamma * tf.gradients(solver_loss, var)[0], var))
+                                print("Encoder Compute Gradients ... {:2d}|{:3d}/{:3d}".format(device_id + 1,
+                                                                                               i, len(encoder_vars)))
+                            # encoder_grads = [
+                            #     (tf.gradients(encoder_net, var, grad_z)[0] +
+                            #      0.25 * tf.gradients(commit_loss, var)[0] +
+                            #      self.solver_gamma * tf.gradients(solver_loss, var)[0], var)
+                            #     for var in encoder_vars]
                             # Embedding Grads
                             embed_grads = list(zip(tf.gradients(q_loss, codebook), [codebook]))
                             gradients = decoder_grads + encoder_grads + embed_grads
