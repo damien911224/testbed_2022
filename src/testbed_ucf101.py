@@ -2515,6 +2515,8 @@ class Networks:
                                                     net = tf.reshape(net, (N, T, H * W, C))
                                                     net = tf.image.resize_bilinear(net, size=(T * 2, H * W))
 
+                                                net = tf.reshape(net, (N, T * 2, H, W, C))
+
                                                 with tf.variable_scope("Conv3d_3x1x1_1a", reuse=tf.AUTO_REUSE):
                                                     C = net.get_shape().as_list()[-1] \
                                                         if self.networks.dformat == "NDHWC" \
@@ -2543,12 +2545,12 @@ class Networks:
                                                                                         trainable=self.is_training)
                                                     net = tf.nn.relu(net)
 
-                                                net = tf.reshape(net, (N, T * 2, H, W, C))
-
                                             N, T, H, W, C = net.get_shape().as_list()
                                             with tf.variable_scope("S_UpSample_0a", reuse=tf.AUTO_REUSE):
                                                 net = tf.reshape(net, (N * T, H, W, C))
                                                 net = tf.image.resize_bilinear(net, size=(H * 2, W * 2))
+
+                                            net = tf.reshape(net, (N, T, H * 2, W * 2, C))
 
                                             with tf.variable_scope("Conv1d_1x3x3_1b", reuse=tf.AUTO_REUSE):
                                                 C = net.get_shape().as_list()[-1] \
@@ -2577,8 +2579,6 @@ class Networks:
                                                                                     training=self.is_training,
                                                                                     trainable=self.is_training)
                                                 net = tf.nn.relu(net)
-
-                                            net = tf.reshape(net, (N, T, H * 2, W * 2, C))
 
                                     low_level_features = inputs
 
