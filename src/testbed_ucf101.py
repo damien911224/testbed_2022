@@ -156,7 +156,7 @@ class Networks:
             image_summary_size = 10 * 3
             self.image_summary_ph = \
                 tf.placeholder(dtype=tf.uint8,
-                               shape=(image_summary_size, 224 * 2 + 10, 224, 3))
+                               shape=(image_summary_size, 224, 224 * 2 + 10, 3))
             self.image_summary = \
                 tf.summary.image("reconstruction_images",
                                  self.image_summary_ph,
@@ -452,8 +452,8 @@ class Networks:
                                 p_image = np.array(
                                     np.clip(((reconstruction_predictions[n_i, sampled_t] + 1.0) / 2.0) * 255.0,
                                             0.0, 255.0), dtype=np.uint8)
-                                buffer = np.zeros(dtype=np.uint8, shape=(10, 224, 3))
-                                image = np.concatenate([t_image, buffer, p_image], axis=0)
+                                buffer = np.zeros(dtype=np.uint8, shape=(224, 10, 3))
+                                image = np.concatenate([t_image, buffer, p_image], axis=1)
                                 reconstruction_images.append(image)
 
                         print_string = \
