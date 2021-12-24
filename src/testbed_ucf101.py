@@ -2325,14 +2325,14 @@ class Networks:
                                     # N, T, H, W, C = net.get_shape().as_list()
                                     # K, _ = codebook.get_shape().as_list()
                                     #
-                                    # soft_targets = \
+                                    # solver_targets = \
                                     #     tf.matmul(net,
                                     #               tf.expand_dims(tf.transpose(codebook, (1, 0)), axis=0))
                                     # # N, T, H, W, K
-                                    # soft_targets = tf.nn.softmax(soft_targets, axis=-1)
+                                    # solver_targets = tf.nn.softmax(solver_targets, axis=-1)
                                     #
                                     # gathered_words = tf.multiply(tf.reshape(codebook, (1, 1, 1, 1, K, C)),
-                                    #                              tf.expand_dims(soft_targets, axis=-1))
+                                    #                              tf.expand_dims(solver_targets, axis=-1))
                                     # # N, T, C
                                     # gathered_words = tf.reduce_sum(gathered_words, axis=-2)
 
@@ -2628,6 +2628,8 @@ class Networks:
 
                                     self.reconstruction_loss += vq_loss
 
+                                    # self.reconstruction_loss += reconstruction_loss
+
                                 loss = self.solver_gamma * solver_loss + vq_loss
                                 self.loss += loss
                             else:
@@ -2721,19 +2723,27 @@ class Networks:
                             encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                                              scope=self.name + "/Encoder")
                             grad_z = tf.gradients(reconstruction_loss, gathered_words)
-                            encoder_grads = list()
-                            for i, var in enumerate(encoder_vars):
-                                encoder_grads.append(
-                                    (tf.gradients(encoder_net, var, grad_z)[0] +
-                                     0.25 * tf.gradients(commit_loss, var)[0] +
-                                     self.solver_gamma * tf.gradients(solver_loss, var)[0], var))
-                                print("Encoder Compute Gradients ... {:2d}|{:3d}/{:3d}".format(
-                                    device_id + 1, i + 1, len(encoder_vars)))
+                            # encoder_grads = list()
+                            # for i, var in enumerate(encoder_vars):
+                            #     encoder_grads.append(
+                            #         (tf.gradients(encoder_net, var, grad_z)[0] +
+                            #          0.25 * tf.gradients(commit_loss, var)[0] +
+                            #          self.solver_gamma * tf.gradients(solver_loss, var)[0], var))
+                            #     print("Encoder Compute Gradients ... {:2d}|{:3d}/{:3d}".format(
+                            #         device_id + 1, i + 1, len(encoder_vars)))
                             # encoder_grads = [
                             #     (tf.gradients(encoder_net, var, grad_z)[0] +
-                            #      0.25 * tf.gradients(commit_loss, var)[0] +
-                            #      self.solver_gamma * tf.gradients(solver_loss, var)[0], var)
+                            #      0.25 * self.networks.optimizer.compute_gradients(commit_loss, var)[0] +
+                            #      self.solver_gamma * self.networks.optimizer.compute_gradients(solver_loss, var)[0], var)
                             #     for var in encoder_vars]
+                            encoder_grads_01 = tf.gradients(encoder_net, encoder_vars, grad_z)
+                            encoder_grads_02 = tf.gradients(commit_loss, encoder_vars)
+                            encoder_grads_03 = tf.gradients(solver_loss, encoder_vars)
+                            encoder_grads = \
+                                list(zip([grads_01 + 0.25 * grads_02 + self.solver_gamma * grads_03
+                                          for grads_01, grads_02, grads_03
+                                          in zip(encoder_grads_01, encoder_grads_02, encoder_grads_03)],
+                                         encoder_vars))
                             # Embedding Grads
                             embed_grads = list(zip(tf.gradients(q_loss, codebook), [codebook]))
                             gradients = decoder_grads + encoder_grads + embed_grads
