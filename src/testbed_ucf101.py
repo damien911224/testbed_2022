@@ -2272,14 +2272,17 @@ class Networks:
                                                      self.batch_size * (device_id + 1)]
                             else:
                                 inputs = self.frames
+                            end_point = "Encoder"
+                            with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                net = I3D.build_model(inputs=inputs,
+                                                      weight_decay=self.weight_decay,
+                                                      end_points=self.end_points,
+                                                      dtype=self.networks.dtype,
+                                                      dformat=self.networks.dformat,
+                                                      is_training=self.is_training,
+                                                      scope=self.i3d_name)
 
-                            net = I3D.build_model(inputs=inputs,
-                                                  weight_decay=self.weight_decay,
-                                                  end_points=self.end_points,
-                                                  dtype=self.networks.dtype,
-                                                  dformat=self.networks.dformat,
-                                                  is_training=self.is_training,
-                                                  scope=self.i3d_name)
+                                encoder_net = tf.identity(net)
 
                             if self.phase == "pretraining":
                                 masks = self.masks[self.batch_size * device_id:
@@ -2303,35 +2306,38 @@ class Networks:
                                     # N, T, C = T_pooled.get_shape().as_list()
                                     # K, _ = T_codebook.get_shape().as_list()
 
-                                    # # N, K, T, H, W
-                                    # distances = tf.reduce_sum(tf.square(tf.subtract(
-                                    #     tf.expand_dims(net, axis=1),
-                                    #     tf.reshape(T_codebook, (1, K, 1, 1, 1, C)))), axis=-1)
-
-                                    # # N, T, H, W
-                                    # max_indices = tf.argmax(distances, axis=1)
-                                    # max_indices = tf.reshape(max_indices, (-1, ))
-                                    #
-                                    # gathered_words = tf.gather(T_codebook, max_indices)
-                                    # gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
-
-
+                                    # N, K, T, H, W
                                     N, T, H, W, C = net.get_shape().as_list()
                                     K, _ = codebook.get_shape().as_list()
+                                    distances = tf.reduce_sum(tf.square(tf.subtract(
+                                        tf.expand_dims(net, axis=1),
+                                        tf.reshape(codebook, (1, K, 1, 1, 1, C)))), axis=-1)
 
-                                    soft_targets = \
-                                        tf.matmul(net,
-                                                  tf.expand_dims(tf.transpose(codebook, (1, 0)), axis=0))
-                                    # N, T, H, W, K
-                                    soft_targets = tf.nn.softmax(soft_targets, axis=-1)
+                                    # N, T, H, W
+                                    max_indices = tf.argmax(distances, axis=1)
+                                    max_indices = tf.reshape(max_indices, (-1, ))
+                                    solver_targets = tf.one_hot(max_indices, self.K)
+                                    solver_targets = tf.reshape(solver_targets, (N, T, H, W, K))
 
-                                    gathered_words = tf.multiply(tf.reshape(codebook, (1, 1, 1, 1, K, C)),
-                                                                 tf.expand_dims(soft_targets, axis=-1))
-                                    # N, T, C
-                                    gathered_words = tf.reduce_sum(gathered_words, axis=-2)
+                                    gathered_words = tf.gather(codebook, max_indices)
+                                    gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
+
+                                    # N, T, H, W, C = net.get_shape().as_list()
+                                    # K, _ = codebook.get_shape().as_list()
+                                    #
+                                    # soft_targets = \
+                                    #     tf.matmul(net,
+                                    #               tf.expand_dims(tf.transpose(codebook, (1, 0)), axis=0))
+                                    # # N, T, H, W, K
+                                    # soft_targets = tf.nn.softmax(soft_targets, axis=-1)
+                                    #
+                                    # gathered_words = tf.multiply(tf.reshape(codebook, (1, 1, 1, 1, K, C)),
+                                    #                              tf.expand_dims(soft_targets, axis=-1))
+                                    # # N, T, C
+                                    # gathered_words = tf.reduce_sum(gathered_words, axis=-2)
 
                                 end_point = "Solver"
-                                net = tf.identity(gathered_words)
+                                net = tf.identity(encoder_net)
                                 masks = tf.reshape(masks, (-1, 8, 7, 7))
                                 net = tf.multiply(net, tf.expand_dims(masks, axis=-1))
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
@@ -2496,7 +2502,7 @@ class Networks:
                                         net = tf.nn.bias_add(net, bias)
 
                                     p = tf.nn.softmax(net, axis=-1)
-                                    t = tf.stop_gradient(soft_targets)
+                                    t = tf.stop_gradient(solver_targets)
                                     solver_loss = -tf.reduce_mean(t * tf.log(p + 1.0e-7), axis=-1)
                                     solver_loss = tf.multiply(solver_loss, 1.0 - masks)
                                     solver_loss = tf.reduce_sum(solver_loss, axis=(1, 2, 3))
@@ -2608,13 +2614,21 @@ class Networks:
                                     net = tf.image.resize_bilinear(net, size=(target_H, target_W))
                                     net = tf.reshape(net, (N, target_T, target_H, target_W, C))
 
-                                    reconstruction_loss = tf.reduce_sum(tf.square(net - low_level_features), axis=-1)
+                                    reconstruction_loss = tf.reduce_mean(tf.square(net - low_level_features), axis=-1)
                                     reconstruction_loss = tf.reduce_mean(reconstruction_loss, axis=(1, 2, 3))
                                     reconstruction_loss = tf.reduce_mean(reconstruction_loss, axis=0)
 
-                                    self.reconstruction_loss += reconstruction_loss
+                                    q_loss = tf.reduce_mean(tf.square(tf.norm(
+                                        tf.stop_gradient(encoder_net) - gathered_words, axis=-1)))
 
-                                loss = self.solver_gamma * solver_loss + reconstruction_loss
+                                    commit_loss = tf.reduce_mean(tf.square(tf.norm(
+                                        encoder_net - tf.stop_gradient(gathered_words), axis=-1)))
+
+                                    vq_loss = reconstruction_loss + q_loss + 0.25 * commit_loss
+
+                                    self.reconstruction_loss += vq_loss
+
+                                loss = self.solver_gamma * solver_loss + vq_loss
                                 self.loss += loss
                             else:
                                 end_point = "Logits"
@@ -2699,10 +2713,25 @@ class Networks:
                                 self.loss += loss
 
                         if self.is_training:
-                            gradients = self.networks.optimizer.compute_gradients(loss)
-                            if device_id == 0:
-                                self.reg_gradients = self.networks.optimizer.compute_gradients(
-                                    tf.losses.get_regularization_loss())
+                            # Decoder Grads
+                            decoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                                             scope=self.name + "/Decoder")
+                            decoder_grads = list(zip(tf.gradients(vq_loss, decoder_vars), decoder_vars))
+                            # Encoder Grads
+                            encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                                             scope=self.name + "/Encoder")
+                            grad_z = tf.gradients(reconstruction_loss, gathered_words)
+                            encoder_grads = [
+                                (tf.gradients(encoder_net, var, grad_z)[0] +
+                                 0.25 * tf.gradients(commit_loss, var)[0] +
+                                 self.solver_gamma * tf.gradients(solver_loss, var)[0], var)
+                                for var in encoder_vars]
+                            # Embedding Grads
+                            embed_grads = list(zip(tf.gradients(q_loss, codebook), [codebook]))
+                            gradients = decoder_grads + encoder_grads + embed_grads,
+                            # if device_id == 0:
+                            #     self.reg_gradients = self.networks.optimizer.compute_gradients(
+                            #         tf.losses.get_regularization_loss())
                             self.gradients.append(gradients)
 
             with tf.device("/cpu:0"):
@@ -2727,8 +2756,8 @@ class Networks:
                         grad = tf.reduce_mean(grad, 0)
                         v = grad_and_vars[0][1]
 
-                        if self.reg_gradients[index][0] is not None:
-                            grad += self.reg_gradients[index][0]
+                        # if self.reg_gradients[index][0] is not None:
+                        #     grad += self.reg_gradients[index][0]
                         index += 1
 
                         grad_and_var = (grad, v)
