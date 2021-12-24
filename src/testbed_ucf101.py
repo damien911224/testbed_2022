@@ -2319,7 +2319,7 @@ class Networks:
                                         tf.matmul(T_pooled,
                                                   tf.expand_dims(tf.transpose(T_codebook, (1, 0)), axis=0))
                                     # N, T, K
-                                    soft_targets = tf.stop_gradient(tf.nn.softmax(soft_targets, axis=-1))
+                                    soft_targets = tf.nn.softmax(soft_targets, axis=-1)
 
                                     gathered_words = tf.multiply(tf.reshape(T_codebook, (1, 1, K, C)),
                                                                  tf.expand_dims(soft_targets, axis=-1))
@@ -2405,7 +2405,7 @@ class Networks:
                                         net = tf.nn.bias_add(net, bias)
 
                                     p = tf.nn.softmax(net, axis=-1)
-                                    t = soft_targets
+                                    t = tf.stop_gradient(soft_targets)
                                     solver_loss = -tf.reduce_mean(t * tf.log(p + 1.0e-7), axis=-1)
                                     solver_loss = tf.multiply(solver_loss, 1.0 - masks)
                                     solver_loss = tf.reduce_sum(solver_loss, axis=1)
