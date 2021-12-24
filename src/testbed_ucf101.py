@@ -2779,7 +2779,6 @@ class Networks:
                                          encoder_vars))
                             # Embedding Grads
                             embed_grads = list(zip(tf.gradients(q_loss, codebook), [codebook]))
-                            gradients = decoder_grads + encoder_grads + embed_grads
                             # Solver Grads
                             solver_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                                             scope=self.name + "/Solver")
