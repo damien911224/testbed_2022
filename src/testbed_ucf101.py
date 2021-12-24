@@ -2552,7 +2552,7 @@ class Networks:
 
                                             net = tf.reshape(net, (N, T, H * 2, W * 2, C))
 
-                                            with tf.variable_scope("Conv1d_1x3x3_1b", reuse=tf.AUTO_REUSE):
+                                            with tf.variable_scope("Conv3d_1x3x3_1b", reuse=tf.AUTO_REUSE):
                                                 C = net.get_shape().as_list()[-1] \
                                                     if self.networks.dformat == "NDHWC" \
                                                     else net.get_shape().as_list()[1]
@@ -2585,14 +2585,14 @@ class Networks:
                                     with tf.variable_scope("ReconstructionLogits", reuse=tf.AUTO_REUSE):
                                         C = net.get_shape().as_list()[-1]
                                         target_C = low_level_features.get_shape().as_list()[-1]
-                                        kernel = tf.get_variable(name="conv_1d/kernel",
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
                                                                  dtype=self.networks.dtype,
                                                                  shape=[1, C, target_C],
                                                                  initializer=kernel_initializer,
                                                                  regularizer=kernel_regularizer,
                                                                  trainable=self.is_training)
-                                        net = tf.nn.conv1d(net, kernel, [1, 1, 1], padding="SAME")
-                                        bias = tf.get_variable(name="conv_1d/bias",
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME")
+                                        bias = tf.get_variable(name="conv_3d/bias",
                                                                dtype=self.networks.dtype,
                                                                shape=[target_C],
                                                                initializer=bias_initializer,
