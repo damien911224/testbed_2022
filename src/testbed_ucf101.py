@@ -2211,7 +2211,7 @@ class Networks:
             self.weight_decay = 1.0e-7
             self.K = 200
 
-            self.solver_gamma = 10.0
+            self.solver_gamma = 1.0
 
             if batch_size is None:
                 self.batch_size = \
