@@ -2786,9 +2786,13 @@ class Networks:
                                 [self.solver_gamma * grad for grad in tf.gradients(solver_loss, solver_vars)],
                                 solver_vars))
                             gradients = decoder_grads + encoder_grads + embed_grads + solver_grads
-                            # if device_id == 0:
-                            #     self.reg_gradients = self.networks.optimizer.compute_gradients(
-                            #         tf.losses.get_regularization_loss())
+                            if device_id == 0:
+                                # self.reg_gradients = self.networks.optimizer.compute_gradients(
+                                #     tf.losses.get_regularization_loss())
+                                all_vars = decoder_vars + encoder_vars + [codebook] + solver_vars
+                                self.reg_gradients = \
+                                    list(zip(tf.gradients(tf.losses.get_regularization_loss(), all_vars), all_vars))
+
                             self.gradients.append(gradients)
 
             with tf.device("/cpu:0"):
@@ -2815,8 +2819,8 @@ class Networks:
                         grad = tf.reduce_mean(grad, 0)
                         v = grad_and_vars[0][1]
 
-                        # if self.reg_gradients[index][0] is not None:
-                        #     grad += self.reg_gradients[index][0]
+                        if self.reg_gradients[index][0] is not None:
+                            grad += self.reg_gradients[index][0]
                         index += 1
 
                         grad_and_var = (grad, v)
