@@ -2414,7 +2414,7 @@ class Networks:
                                     # gathered_words = tf.reduce_sum(gathered_words, axis=-2)
 
                                 end_point = "Solver"
-                                net = tf.identity(encoder_net)
+                                net = tf.identity(gathered_words)
                                 masks = tf.reshape(masks, (-1, 8, 7, 7))
                                 net = tf.multiply(net, tf.expand_dims(masks, axis=-1))
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
@@ -2863,6 +2863,7 @@ class Networks:
                                 encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                                                  scope=self.name + "/Encoder")
                                 grad_z = tf.gradients(reconstruction_loss, gathered_words)
+                                grad_s = tf.gradients(solver_loss, gathered_words)
                                 # encoder_grads = list()
                                 # for i, var in enumerate(encoder_vars):
                                 #     encoder_grads.append(
@@ -2878,7 +2879,8 @@ class Networks:
                                 #     for var in encoder_vars]
                                 encoder_grads_01 = tf.gradients(encoder_net, encoder_vars, grad_z)
                                 encoder_grads_02 = tf.gradients(commit_loss, encoder_vars)
-                                encoder_grads_03 = tf.gradients(solver_loss, encoder_vars)
+                                # encoder_grads_03 = tf.gradients(solver_loss, encoder_vars)
+                                encoder_grads_03 = tf.gradients(encoder_net, encoder_vars, grad_s)
                                 encoder_grads = \
                                     list(zip([grads_01 + 0.25 * grads_02 + self.solver_gamma * grads_03
                                               for grads_01, grads_02, grads_03
