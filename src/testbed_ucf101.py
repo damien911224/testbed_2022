@@ -2357,8 +2357,9 @@ class Networks:
                                 encoder_net = tf.identity(net)
 
                             if self.phase == "pretraining":
-                                targets = self.targets[self.batch_size * device_id:
-                                                       self.batch_size * (device_id + 1)]
+                                if self.name != "Target":
+                                    targets = self.targets[self.batch_size * device_id:
+                                                           self.batch_size * (device_id + 1)]
                                 masks = self.masks[self.batch_size * device_id:
                                                    self.batch_size * (device_id + 1)]
 
