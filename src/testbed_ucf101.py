@@ -2390,7 +2390,7 @@ class Networks:
                                         tf.reshape(codebook, (1, K, 1, 1, 1, C)))), axis=-1)
 
                                     # N, T, H, W
-                                    max_indices = tf.argmax(distances, axis=1)
+                                    max_indices = tf.argmin(distances, axis=1)
                                     max_indices = tf.reshape(max_indices, (-1, ))
                                     vq_predictions = tf.one_hot(max_indices, self.K)
                                     vq_predictions = tf.reshape(vq_predictions, (N, T, H, W, K))
