@@ -255,7 +255,9 @@ class Networks:
 
                     train_step_start_time = time.time()
                     solver_targets = \
-                        session.run(self.model_target.vq_predictions, feed_dict={self.model.frames: frame_vectors})
+                        session.run(self.model_target.vq_predictions,
+                                    feed_dict={self.model.frames: frame_vectors,
+                                               self.model.masks: masks})
 
                     _, loss, \
                     solver_loss, \
@@ -352,7 +354,9 @@ class Networks:
                             break
 
                         solver_targets = \
-                            session.run(self.model_target.vq_predictions, feed_dict={self.model.frames: frame_vectors})
+                            session.run(self.model_target.vq_predictions,
+                                        feed_dict={self.model.frames: frame_vectors,
+                                                   self.model.masks: masks})
 
                         loss, solver_loss, reconstruction_loss, \
                         reconstruction_predictions = \
