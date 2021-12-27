@@ -35,7 +35,7 @@ class Networks:
         print("=" * 90)
 
         self.is_server = True
-        self.batch_size = 2 if self.is_server else 2
+        self.batch_size = 4 if self.is_server else 2
         self.num_gpus = 4 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
@@ -2393,6 +2393,8 @@ class Networks:
                                     vq_predictions = tf.one_hot(max_indices, self.K)
                                     vq_predictions = tf.reshape(vq_predictions, (N, T, H, W, K))
                                     self.vq_predictions.append(vq_predictions)
+                                    if self.name == "Target":
+                                        targets = vq_predictions
 
                                     gathered_words = tf.gather(codebook, max_indices)
                                     gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
