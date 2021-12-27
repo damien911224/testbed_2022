@@ -2743,7 +2743,7 @@ class Networks:
                                     if T < target_T:
                                         net = tf.reshape(net, (N, T, H * W, C))
                                         net = tf.image.resize_bilinear(net, size=(target_T, H * W))
-                                        net = tf.reshape(net, (target_T, H, W))
+                                        net = tf.reshape(net, (target_T, H, W, C))
                                     if H < target_W:
                                         net = tf.reshape(net, (N * target_T, H, W, C))
                                         net = tf.image.resize_bilinear(net, size=(target_H, target_W))
