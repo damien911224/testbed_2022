@@ -2748,50 +2748,56 @@ class Networks:
                                 self.loss += loss
 
                         if self.is_training:
-                            # Decoder Grads
-                            decoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                                             scope=self.name + "/Decoder")
-                            decoder_grads = list(zip(tf.gradients(vq_loss, decoder_vars), decoder_vars))
-                            # Encoder Grads
-                            encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                                             scope=self.name + "/Encoder")
-                            grad_z = tf.gradients(reconstruction_loss, gathered_words)
-                            # encoder_grads = list()
-                            # for i, var in enumerate(encoder_vars):
-                            #     encoder_grads.append(
-                            #         (tf.gradients(encoder_net, var, grad_z)[0] +
-                            #          0.25 * tf.gradients(commit_loss, var)[0] +
-                            #          self.solver_gamma * tf.gradients(solver_loss, var)[0], var))
-                            #     print("Encoder Compute Gradients ... {:2d}|{:3d}/{:3d}".format(
-                            #         device_id + 1, i + 1, len(encoder_vars)))
-                            # encoder_grads = [
-                            #     (tf.gradients(encoder_net, var, grad_z)[0] +
-                            #      0.25 * self.networks.optimizer.compute_gradients(commit_loss, var)[0] +
-                            #      self.solver_gamma * self.networks.optimizer.compute_gradients(solver_loss, var)[0], var)
-                            #     for var in encoder_vars]
-                            encoder_grads_01 = tf.gradients(encoder_net, encoder_vars, grad_z)
-                            encoder_grads_02 = tf.gradients(commit_loss, encoder_vars)
-                            encoder_grads_03 = tf.gradients(solver_loss, encoder_vars)
-                            encoder_grads = \
-                                list(zip([grads_01 + 0.25 * grads_02 + self.solver_gamma * grads_03
-                                          for grads_01, grads_02, grads_03
-                                          in zip(encoder_grads_01, encoder_grads_02, encoder_grads_03)],
-                                         encoder_vars))
-                            # Embedding Grads
-                            embed_grads = list(zip(tf.gradients(q_loss, codebook), [codebook]))
-                            # Solver Grads
-                            solver_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                                            scope=self.name + "/Solver")
-                            solver_grads = list(zip(
-                                [self.solver_gamma * grad for grad in tf.gradients(solver_loss, solver_vars)],
-                                solver_vars))
-                            gradients = decoder_grads + encoder_grads + embed_grads + solver_grads
-                            if device_id == 0:
-                                # self.reg_gradients = self.networks.optimizer.compute_gradients(
-                                #     tf.losses.get_regularization_loss())
-                                all_vars = decoder_vars + encoder_vars + [codebook] + solver_vars
-                                self.reg_gradients = \
-                                    list(zip(tf.gradients(tf.losses.get_regularization_loss(), all_vars), all_vars))
+                            if self.phase == "pretraining":
+                                # Decoder Grads
+                                decoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                                                 scope=self.name + "/Decoder")
+                                decoder_grads = list(zip(tf.gradients(vq_loss, decoder_vars), decoder_vars))
+                                # Encoder Grads
+                                encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                                                 scope=self.name + "/Encoder")
+                                grad_z = tf.gradients(reconstruction_loss, gathered_words)
+                                # encoder_grads = list()
+                                # for i, var in enumerate(encoder_vars):
+                                #     encoder_grads.append(
+                                #         (tf.gradients(encoder_net, var, grad_z)[0] +
+                                #          0.25 * tf.gradients(commit_loss, var)[0] +
+                                #          self.solver_gamma * tf.gradients(solver_loss, var)[0], var))
+                                #     print("Encoder Compute Gradients ... {:2d}|{:3d}/{:3d}".format(
+                                #         device_id + 1, i + 1, len(encoder_vars)))
+                                # encoder_grads = [
+                                #     (tf.gradients(encoder_net, var, grad_z)[0] +
+                                #      0.25 * self.networks.optimizer.compute_gradients(commit_loss, var)[0] +
+                                #      self.solver_gamma * self.networks.optimizer.compute_gradients(solver_loss, var)[0], var)
+                                #     for var in encoder_vars]
+                                encoder_grads_01 = tf.gradients(encoder_net, encoder_vars, grad_z)
+                                encoder_grads_02 = tf.gradients(commit_loss, encoder_vars)
+                                encoder_grads_03 = tf.gradients(solver_loss, encoder_vars)
+                                encoder_grads = \
+                                    list(zip([grads_01 + 0.25 * grads_02 + self.solver_gamma * grads_03
+                                              for grads_01, grads_02, grads_03
+                                              in zip(encoder_grads_01, encoder_grads_02, encoder_grads_03)],
+                                             encoder_vars))
+                                # Embedding Grads
+                                embed_grads = list(zip(tf.gradients(q_loss, codebook), [codebook]))
+                                # Solver Grads
+                                solver_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                                                scope=self.name + "/Solver")
+                                solver_grads = list(zip(
+                                    [self.solver_gamma * grad for grad in tf.gradients(solver_loss, solver_vars)],
+                                    solver_vars))
+                                gradients = decoder_grads + encoder_grads + embed_grads + solver_grads
+                                if device_id == 0:
+                                    # self.reg_gradients = self.networks.optimizer.compute_gradients(
+                                    #     tf.losses.get_regularization_loss())
+                                    all_vars = decoder_vars + encoder_vars + [codebook] + solver_vars
+                                    self.reg_gradients = \
+                                        list(zip(tf.gradients(tf.losses.get_regularization_loss(), all_vars), all_vars))
+                            else:
+                                gradients = self.networks.optimizer.compute_gradients(loss)
+                                if device_id == 0:
+                                    self.reg_gradients = \
+                                        self.networks.optimizer.compute_gradients(tf.losses.get_regularization_loss())
 
                             self.gradients.append(gradients)
 
