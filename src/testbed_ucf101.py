@@ -2371,7 +2371,7 @@ class Networks:
                                                         dtype=self.networks.dtype,
                                                         shape=[self.K, net.get_shape()[-1]],
                                                         initializer=kernel_initializer,
-                                                        regularizer=kernel_regularizer,
+                                                        regularizer=None,
                                                         trainable=self.is_training)
 
                                 end_point = "VQ"
