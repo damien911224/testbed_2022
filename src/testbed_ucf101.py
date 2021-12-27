@@ -223,6 +223,7 @@ class Networks:
             # Initialize all the variables
             init_variables = tf.global_variables_initializer()
             session.run(init_variables)
+            session.run(self.target_network_update_op)
 
             batch_iteration = 1
 
