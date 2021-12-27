@@ -2390,13 +2390,13 @@ class Networks:
                                         tf.reshape(codebook, (1, K, 1, 1, 1, C)))), axis=-1)
 
                                     # N, T, H, W
-                                    max_indices = tf.argmin(distances, axis=1)
-                                    max_indices = tf.reshape(max_indices, (-1, ))
-                                    vq_predictions = tf.one_hot(max_indices, self.K)
+                                    min_indices = tf.argmin(distances, axis=1)
+                                    min_indices = tf.reshape(min_indices, (-1, ))
+                                    vq_predictions = tf.one_hot(min_indices, self.K)
                                     vq_predictions = tf.reshape(vq_predictions, (N, T, H, W, K))
                                     self.vq_predictions.append(vq_predictions)
 
-                                    gathered_words = tf.gather(codebook, max_indices)
+                                    gathered_words = tf.gather(codebook, min_indices)
                                     gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
 
                                     # N, T, H, W, C = net.get_shape().as_list()
