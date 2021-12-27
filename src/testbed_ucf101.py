@@ -256,8 +256,7 @@ class Networks:
                     train_step_start_time = time.time()
                     solver_targets = \
                         session.run(self.model_target.vq_predictions,
-                                    feed_dict={self.model.frames: frame_vectors,
-                                               self.model.masks: masks})
+                                    feed_dict={self.model_target.frames: frame_vectors})
 
                     _, loss, \
                     solver_loss, \
@@ -355,8 +354,7 @@ class Networks:
 
                         solver_targets = \
                             session.run(self.model_target.vq_predictions,
-                                        feed_dict={self.model.frames: frame_vectors,
-                                                   self.model.masks: masks})
+                                        feed_dict={self.model_target.frames: frame_vectors})
 
                         loss, solver_loss, reconstruction_loss, \
                         reconstruction_predictions = \
@@ -2361,9 +2359,8 @@ class Networks:
                                 encoder_net = tf.identity(net)
 
                             if self.phase == "pretraining":
-                                if self.name != "Target":
-                                    targets = self.targets[self.batch_size * device_id:
-                                                           self.batch_size * (device_id + 1)]
+                                targets = self.targets[self.batch_size * device_id:
+                                                       self.batch_size * (device_id + 1)]
                                 masks = self.masks[self.batch_size * device_id:
                                                    self.batch_size * (device_id + 1)]
 
@@ -2398,8 +2395,6 @@ class Networks:
                                     vq_predictions = tf.one_hot(max_indices, self.K)
                                     vq_predictions = tf.reshape(vq_predictions, (N, T, H, W, K))
                                     self.vq_predictions.append(vq_predictions)
-                                    if self.name == "Target":
-                                        targets = vq_predictions
 
                                     gathered_words = tf.gather(codebook, max_indices)
                                     gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
