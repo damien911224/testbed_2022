@@ -254,6 +254,9 @@ class Networks:
                     epoch_preprocessing_time += time.time() - preprocessing_start_time
 
                     train_step_start_time = time.time()
+                    solver_targets = \
+                        session.run(self.model_target.vq_predictions, feed_dict={self.model.frames: frame_vectors})
+
                     _, loss, \
                     solver_loss, \
                     reconstruction_loss, \
@@ -265,7 +268,8 @@ class Networks:
                              self.model.reconstruction_loss,
                              current_learning_rate],
                             feed_dict={self.model.frames: frame_vectors,
-                                       self.model.masks: masks})
+                                       self.model.masks: masks,
+                                       self.model.targets: solver_targets})
 
                     epoch_training_time += time.time() - train_step_start_time
                     epoch_loss += loss
@@ -347,6 +351,9 @@ class Networks:
                         except tf.errors.OutOfRangeError:
                             break
 
+                        solver_targets = \
+                            session.run(self.model_target.vq_predictions, feed_dict={self.model.frames: frame_vectors})
+
                         loss, solver_loss, reconstruction_loss, \
                         reconstruction_predictions = \
                             session.run(
@@ -355,7 +362,8 @@ class Networks:
                                  self.model_validation.reconstruction_loss,
                                  self.model_validation.reconstruction_predictions],
                                 feed_dict={self.model_validation.frames: frame_vectors,
-                                           self.model_validation.masks: masks})
+                                           self.model_validation.masks: masks,
+                                           self.model_validation.targets: solver_targets})
 
                         validation_loss += loss
                         validation_solver_loss += solver_loss
@@ -2283,6 +2291,7 @@ class Networks:
             self.solver_loss = 0.0
             self.reconstruction_loss = 0.0
             self.predictions = list()
+            self.vq_predictions = list()
             self.solver_predictions = list()
             self.reconstruction_predictions = list()
 
@@ -2318,6 +2327,9 @@ class Networks:
                                               shape=(batch_size, ),
                                               name="targets")
             else:
+                self.targets = tf.placeholder(dtype=tf.float32,
+                                              shape=(batch_size, 8, 7, 7, self.K),
+                                              name="targets")
                 self.masks = tf.placeholder(dtype=tf.float32,
                                             shape=(batch_size, 8 * 7 * 7),
                                             name="masks")
@@ -2345,6 +2357,8 @@ class Networks:
                                 encoder_net = tf.identity(net)
 
                             if self.phase == "pretraining":
+                                targets = self.targets[self.batch_size * device_id:
+                                                       self.batch_size * (device_id + 1)]
                                 masks = self.masks[self.batch_size * device_id:
                                                    self.batch_size * (device_id + 1)]
 
@@ -2376,8 +2390,9 @@ class Networks:
                                     # N, T, H, W
                                     max_indices = tf.argmax(distances, axis=1)
                                     max_indices = tf.reshape(max_indices, (-1, ))
-                                    solver_targets = tf.one_hot(max_indices, self.K)
-                                    solver_targets = tf.reshape(solver_targets, (N, T, H, W, K))
+                                    vq_predictions = tf.one_hot(max_indices, self.K)
+                                    vq_predictions = tf.reshape(vq_predictions, (N, T, H, W, K))
+                                    self.vq_predictions.append(vq_predictions)
 
                                     gathered_words = tf.gather(codebook, max_indices)
                                     gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
@@ -2610,7 +2625,7 @@ class Networks:
 
                                     p = tf.nn.softmax(net, axis=-1)
                                     self.solver_predictions.append(p)
-                                    t = tf.stop_gradient(solver_targets)
+                                    t = tf.stop_gradient(targets)
                                     solver_loss = -tf.reduce_mean(t * tf.log(p + 1.0e-7), axis=-1)
                                     solver_loss = tf.multiply(solver_loss, 1.0 - masks)
                                     solver_loss = tf.reduce_sum(solver_loss, axis=(1, 2, 3))
@@ -2895,6 +2910,7 @@ class Networks:
                 if self.phase == "pretraining":
                     self.solver_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.reconstruction_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
+                    self.vq_predictions = tf.concat(self.vq_predictions, axis=0)
                     self.solver_predictions = tf.concat(self.solver_predictions, axis=0)
                     self.reconstruction_predictions = tf.concat(self.reconstruction_predictions, axis=0)
                 else:
