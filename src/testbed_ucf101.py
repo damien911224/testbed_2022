@@ -1777,7 +1777,7 @@ class Networks:
                 target = np.array(class_index, dtype=np.int64)
 
                 masks = np.ones(dtype=np.float32, shape=(8 * 7 * 7))
-                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.5)))
+                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.3)))
                 for index in random_indices:
                     masks[index] = 0.0
 
@@ -1980,7 +1980,7 @@ class Networks:
                 target = np.array(class_index, dtype=np.int64)
 
                 masks = np.ones(dtype=np.float32, shape=(8 * 7 * 7))
-                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.5)))
+                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.3)))
                 for index in random_indices:
                     masks[index] = 0.0
 
@@ -2254,7 +2254,7 @@ class Networks:
             self.K = 200
 
             self.solver_num_layers = 3
-            self.solver_gamma = 0.0
+            self.solver_gamma = 1.0
 
             if batch_size is None:
                 self.batch_size = \
@@ -2402,7 +2402,6 @@ class Networks:
 
                                     gathered_words = tf.gather(codebook, min_indices)
                                     gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
-                                    gathered_words = tf.multiply(gathered_words, tf.expand_dims(masks, axis=-1))
 
                                     # N, T, H, W, C = net.get_shape().as_list()
                                     # K, _ = codebook.get_shape().as_list()
