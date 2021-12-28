@@ -2634,6 +2634,8 @@ class Networks:
                                     solver_loss = -tf.reduce_mean(t * tf.log(p + 1.0e-7), axis=-1)
                                     solver_loss = tf.multiply(solver_loss, 1.0 - masks)
                                     solver_loss = tf.reduce_sum(solver_loss, axis=(1, 2, 3))
+                                    solver_loss = tf.divide(solver_loss,
+                                                            tf.reduce_sum(1.0 - masks, axis=(1, 2, 3)) + 1.0e-7)
                                     solver_loss = tf.reduce_mean(solver_loss, axis=0)
 
                                     self.solver_loss += solver_loss
