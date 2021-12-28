@@ -1777,8 +1777,9 @@ class Networks:
                 target = np.array(class_index, dtype=np.int64)
 
                 masks = np.ones(dtype=np.float32, shape=(8 * 7 * 7))
-                random_index = random.choice(range(8 * 7 * 7))
-                masks[random_index] = 0.0
+                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.5)))
+                for index in random_indices:
+                    masks[index] = 0.0
 
                 return frame_vectors, target, masks
 
@@ -1979,8 +1980,9 @@ class Networks:
                 target = np.array(class_index, dtype=np.int64)
 
                 masks = np.ones(dtype=np.float32, shape=(8 * 7 * 7))
-                random_index = random.choice(range(8 * 7 * 7))
-                masks[random_index] = 0.0
+                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.5)))
+                for index in random_indices:
+                    masks[index] = 0.0
 
                 return frame_vectors, target, masks, identities
 
@@ -2364,6 +2366,7 @@ class Networks:
                                                        self.batch_size * (device_id + 1)]
                                 masks = self.masks[self.batch_size * device_id:
                                                    self.batch_size * (device_id + 1)]
+                                masks = tf.reshape(masks, (-1, 8, 7, 7))
 
                                 end_point = "Codebook"
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
@@ -2399,7 +2402,7 @@ class Networks:
 
                                     gathered_words = tf.gather(codebook, min_indices)
                                     gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
-                                    gathered_words = tf.nn.dropout(gathered_words, rate=0.5)
+                                    gathered_words = tf.multiply(gathered_words, tf.expand_dims(masks, axis=-1))
 
                                     # N, T, H, W, C = net.get_shape().as_list()
                                     # K, _ = codebook.get_shape().as_list()
@@ -2417,7 +2420,6 @@ class Networks:
 
                                 end_point = "Solver"
                                 net = tf.identity(gathered_words)
-                                masks = tf.reshape(masks, (-1, 8, 7, 7))
                                 net = tf.multiply(net, tf.expand_dims(masks, axis=-1))
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
                                     with tf.variable_scope("PositionEmbeddings_0a", reuse=tf.AUTO_REUSE):
