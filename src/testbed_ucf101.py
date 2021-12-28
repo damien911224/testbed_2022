@@ -2252,7 +2252,7 @@ class Networks:
             self.K = 200
 
             self.solver_num_layers = 3
-            self.solver_gamma = 1.0
+            self.solver_gamma = 0.0
 
             if batch_size is None:
                 self.batch_size = \
@@ -2399,6 +2399,7 @@ class Networks:
 
                                     gathered_words = tf.gather(codebook, min_indices)
                                     gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
+                                    gathered_words = tf.nn.dropout(gathered_words, rate=0.5)
 
                                     # N, T, H, W, C = net.get_shape().as_list()
                                     # K, _ = codebook.get_shape().as_list()
