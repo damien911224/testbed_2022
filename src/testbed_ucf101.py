@@ -1779,7 +1779,7 @@ class Networks:
                 target = np.array(class_index, dtype=np.int64)
 
                 masks = np.ones(dtype=np.float32, shape=(8 * 7 * 7))
-                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.5)))
+                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.1)))
                 for index in random_indices:
                     masks[index] = 0.0
 
@@ -1982,7 +1982,7 @@ class Networks:
                 target = np.array(class_index, dtype=np.int64)
 
                 masks = np.ones(dtype=np.float32, shape=(8 * 7 * 7))
-                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.5)))
+                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.1)))
                 for index in random_indices:
                     masks[index] = 0.0
 
@@ -2255,7 +2255,7 @@ class Networks:
             self.weight_decay = 1.0e-7
             self.K = 256
             self.solver_num_layers = 1
-            self.solver_gamma = 1.0
+            self.solver_gamma = 0.01
 
             if batch_size is None:
                 self.batch_size = \
