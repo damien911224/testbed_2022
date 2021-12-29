@@ -259,7 +259,7 @@ class Networks:
                         session.run(self.model_target.vq_predictions,
                                     feed_dict={self.model_target.frames: frame_vectors})
 
-                    print(np.argmax(solver_targets[0], axis=-1))
+                    print(np.argmax(solver_targets[0, 0], axis=-1))
 
                     _, loss, \
                     solver_loss, \
