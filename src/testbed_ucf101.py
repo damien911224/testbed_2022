@@ -42,7 +42,7 @@ class Networks:
         self.dataset_name = "ucf101"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
-        self.optimizer_type = "SGD"
+        self.optimizer_type = "Adam"
         if self.dataset_name == "ucf101":
             self.epochs = 200
         else:
@@ -112,9 +112,11 @@ class Networks:
         global current_learning_rate
         current_learning_rate = list()
 
-        # self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
-        #                                             momentum=0.9)
-        self.optimizer = self.AdamOptimizer(learning_rate=self.learning_rate)
+        if self.optimizer_type == "Adam":
+            self.optimizer = self.AdamOptimizer(learning_rate=self.learning_rate)
+        else:
+            self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
+                                                        momentum=0.9)
 
         self.model = self.Model(self, is_training=True, phase="pretraining", data_type=self.data_type)
         self.model_target = self.Model(self, name="Target",
