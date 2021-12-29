@@ -2254,8 +2254,8 @@ class Networks:
             self.dropout_prob = 0.5
             self.weight_decay = 1.0e-7
             self.K = 256
-            self.solver_num_layers = 1
-            self.solver_gamma = 0.01
+            self.solver_num_layers = 2
+            self.solver_gamma = 0.0
 
             if batch_size is None:
                 self.batch_size = \
@@ -2395,6 +2395,8 @@ class Networks:
                                     distances = tf.reduce_sum(tf.square(tf.subtract(
                                         tf.expand_dims(net, axis=1),
                                         tf.reshape(codebook, (1, K, 1, 1, 1, C)))), axis=-1)
+                                    # probs = tf.nn.softmax(-distances, axis=-1)
+                                    # entropy = tf.reduce_sum(-probs * tf.log(probs + 1.0e-7), axis=-1)
                                     min_indices = tf.argmin(distances, axis=1)
                                     min_indices = tf.reshape(min_indices, (-1, ))
                                     vq_predictions = tf.one_hot(min_indices, self.K)
@@ -2727,7 +2729,7 @@ class Networks:
                                                                   is_training=self.is_training,
                                                                   scope=self.i3d_name + "_Reverse")
 
-                                    low_level_features = inputs
+                                    low_level_features = tf.stop_gradient(inputs)
 
                                     with tf.variable_scope("ReconstructionLogits", reuse=tf.AUTO_REUSE):
                                         C = net.get_shape().as_list()[-1]
