@@ -96,7 +96,7 @@ class Networks:
         self.global_step = tf.Variable(0, trainable=False)
         self.global_epochs = tf.Variable(1, trainable=False)
         if self.optimizer_type == "Adam":
-            self.starter_learning_rate = 2.0e-4
+            self.starter_learning_rate = 2.0e-3
         else:
             self.starter_learning_rate = 1.0e-2
 
@@ -112,8 +112,9 @@ class Networks:
         global current_learning_rate
         current_learning_rate = list()
 
-        self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
-                                                    momentum=0.9)
+        # self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
+        #                                             momentum=0.9)
+        self.optimizer = self.AdamOptimizer(learning_rate=self.learning_rate)
 
         self.model = self.Model(self, is_training=True, phase="pretraining", data_type=self.data_type)
         self.model_target = self.Model(self, name="Target",
@@ -2255,7 +2256,7 @@ class Networks:
             self.weight_decay = 1.0e-7
             self.K = 256
             self.solver_num_layers = 2
-            self.solver_gamma = 0.0
+            self.solver_gamma = 0.1
 
             if batch_size is None:
                 self.batch_size = \
