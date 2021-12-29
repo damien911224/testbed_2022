@@ -259,6 +259,8 @@ class Networks:
                         session.run(self.model_target.vq_predictions,
                                     feed_dict={self.model_target.frames: frame_vectors})
 
+                    print(solver_targets[0, 0, 0, 0])
+
                     _, loss, \
                     solver_loss, \
                     reconstruction_loss, \
@@ -2251,9 +2253,8 @@ class Networks:
 
             self.dropout_prob = 0.5
             self.weight_decay = 1.0e-7
-            self.K = 200
-
-            self.solver_num_layers = 3
+            self.K = 256
+            self.solver_num_layers = 1
             self.solver_gamma = 1.0
 
             if batch_size is None:
@@ -2389,11 +2390,11 @@ class Networks:
                                     # N, K, T, H, W
                                     N, T, H, W, C = net.get_shape().as_list()
                                     K, _ = codebook.get_shape().as_list()
+
+                                    # N, T, H, W, K
                                     distances = tf.reduce_sum(tf.square(tf.subtract(
                                         tf.expand_dims(net, axis=1),
                                         tf.reshape(codebook, (1, K, 1, 1, 1, C)))), axis=-1)
-
-                                    # N, T, H, W
                                     min_indices = tf.argmin(distances, axis=1)
                                     min_indices = tf.reshape(min_indices, (-1, ))
                                     vq_predictions = tf.one_hot(min_indices, self.K)
@@ -2421,6 +2422,7 @@ class Networks:
                                 net = tf.identity(gathered_words)
                                 net = tf.multiply(net, tf.expand_dims(masks, axis=-1))
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    split = 0
                                     with tf.variable_scope("PositionEmbeddings_0a", reuse=tf.AUTO_REUSE):
                                         N, T, H, W, C = net.get_shape().as_list()
                                         PEs = tf.get_variable(name="position_embeddings",
@@ -2553,7 +2555,7 @@ class Networks:
                                             net = tf.contrib.layers.layer_norm(outputs, trainable=self.is_training)
 
                                     net = tf.reshape(net, (N, T, H, -1, C))
-
+                                    split = 0
                                     # with tf.variable_scope("Conv3d_3x1x1_1a", reuse=tf.AUTO_REUSE):
                                     #     C = net.get_shape().as_list()[-1] \
                                     #         if self.networks.dformat == "NDHWC" \
@@ -2609,7 +2611,7 @@ class Networks:
                                     #                                         training=self.is_training,
                                     #                                         trainable=self.is_training)
                                     #     net = tf.nn.relu(net)
-
+                                    split = 0
                                     with tf.variable_scope("SolverLogits", reuse=tf.AUTO_REUSE):
                                         C = net.get_shape().as_list()[-1]
                                         target_C = self.K
