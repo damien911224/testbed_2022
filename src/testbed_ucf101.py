@@ -2257,9 +2257,10 @@ class Networks:
             self.dropout_prob = 0.5
             self.weight_decay = 1.0e-7
             self.K = 256
+            self.num_groups = 8
             self.solver_num_layers = 2
             self.solver_gamma = 0.1
-            self.commit_loss_gamma = 0.01
+            self.commit_loss_gamma = 0.25
             self.decoder_num_layers = 2
 
             if batch_size is None:
@@ -2339,7 +2340,7 @@ class Networks:
                                               name="targets")
             else:
                 self.targets = tf.placeholder(dtype=tf.float32,
-                                              shape=(batch_size, 8, 7, 7, self.K),
+                                              shape=(batch_size, 8, 7, 7, self.num_groups, self.K),
                                               name="targets")
                 self.masks = tf.placeholder(dtype=tf.float32,
                                             shape=(batch_size, 8 * 7 * 7),
@@ -2379,7 +2380,7 @@ class Networks:
                                     codebook = \
                                         tf.get_variable(name="codebook",
                                                         dtype=self.networks.dtype,
-                                                        shape=[self.K, net.get_shape()[-1]],
+                                                        shape=[self.K, net.get_shape()[-1] // self.num_groups],
                                                         initializer=kernel_initializer,
                                                         regularizer=None,
                                                         trainable=self.is_training)
@@ -2392,24 +2393,32 @@ class Networks:
                                     # N, T, C = T_pooled.get_shape().as_list()
                                     # K, _ = T_codebook.get_shape().as_list()
 
-                                    # N, K, T, H, W
                                     N, T, H, W, C = net.get_shape().as_list()
-                                    K, _ = codebook.get_shape().as_list()
+                                    # N, G, T, H, W, c
+                                    net = tf.stack(tf.split(net, self.num_groups, axis=-1), axis=1)
+                                    K, c = codebook.get_shape().as_list()
+                                    G = self.num_groups
 
-                                    # N, T, H, W, K
+                                    # N, K, G, T, H, W
                                     distances = tf.reduce_sum(tf.square(tf.subtract(
                                         tf.expand_dims(net, axis=1),
-                                        tf.reshape(codebook, (1, K, 1, 1, 1, C)))), axis=-1)
-                                    # probs = tf.nn.softmax(-distances, axis=-1)
-                                    # entropy = tf.reduce_sum(-probs * tf.log(probs + 1.0e-7), axis=-1)
+                                        tf.reshape(codebook, (1, K, 1, 1, 1, 1, c)))), axis=-1)
                                     min_indices = tf.argmin(distances, axis=1)
                                     min_indices = tf.reshape(min_indices, (-1, ))
                                     vq_predictions = tf.one_hot(min_indices, self.K)
-                                    vq_predictions = tf.reshape(vq_predictions, (N, T, H, W, K))
+                                    vq_predictions = tf.reshape(vq_predictions, (N, G, T, H, W, K))
+                                    vq_predictions = tf.transpose(vq_predictions, (0, 2, 3, 4, 1, 5))
                                     self.vq_predictions.append(vq_predictions)
 
                                     gathered_words = tf.gather(codebook, min_indices)
-                                    gathered_words = tf.reshape(gathered_words, (N, T, H, W, C))
+                                    gathered_words = tf.reshape(gathered_words, (N, G, T, H, W, c))
+                                    gathered_words = tf.concat(tf.unstack(gathered_words, axis=1), axis=-1)
+
+                                    # N, T, H, W, G, K
+                                    probs = tf.transpose(tf.nn.softmax(-distances, axis=1), (0, 3, 4, 5, 2, 1))
+                                    # K
+                                    probs = tf.reduce_mean(probs, axis=(0, 1, 2, 3, 4))
+                                    entropy = tf.reduce_sum(-probs * tf.log(probs + 1.0e-7), axis=-1)
 
                                     # N, T, H, W, C = net.get_shape().as_list()
                                     # K, _ = codebook.get_shape().as_list()
@@ -2427,7 +2436,10 @@ class Networks:
 
                                 end_point = "Solver"
                                 net = tf.identity(gathered_words)
-                                net = tf.multiply(net, tf.expand_dims(masks, axis=-1))
+                                # N, T, H, W, G, C
+                                net = tf.stack(tf.split(net, G, axis=-1), axis=-2)
+                                net = tf.multiply(net, tf.expand_dims(tf.expand_dims(masks, axis=-1), axis=-2))
+                                net = tf.concat(tf.unstack(net, axis=-2), axis=0)
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
                                     split = 0
                                     with tf.variable_scope("PositionEmbeddings_0a", reuse=tf.AUTO_REUSE):
@@ -2637,10 +2649,15 @@ class Networks:
                                                                trainable=self.is_training)
                                         net = tf.nn.bias_add(net, bias)
 
+                                    # N, T, H, W, G, K
+                                    net = tf.stack(tf.split(net, G, axis=0), axis=-2)
                                     p = tf.nn.softmax(net, axis=-1)
                                     self.solver_predictions.append(p)
                                     t = tf.stop_gradient(targets)
-                                    solver_loss = -tf.reduce_mean(t * tf.log(p + 1.0e-7), axis=-1)
+                                    # N, T, H, W, G
+                                    solver_loss = -tf.reduce_sum(t * tf.log(p + 1.0e-7), axis=-1)
+                                    # N, T, H, W
+                                    solver_loss = -tf.reduce_mean(solver_loss, axis=-1)
                                     solver_loss = tf.multiply(solver_loss, 1.0 - masks)
                                     solver_loss = tf.reduce_sum(solver_loss, axis=(1, 2, 3))
                                     solver_loss = tf.divide(solver_loss,
@@ -2928,6 +2945,7 @@ class Networks:
                                                                  scope=self.name + "/Encoder")
                                 grad_z = tf.gradients(reconstruction_loss, gathered_words)
                                 grad_s = tf.gradients(solver_loss, gathered_words)
+                                grad_e = tf.gradients(-entropy, gathered_words)
                                 # encoder_grads = list()
                                 # for i, var in enumerate(encoder_vars):
                                 #     encoder_grads.append(
@@ -2945,11 +2963,13 @@ class Networks:
                                 encoder_grads_02 = tf.gradients(commit_loss, encoder_vars)
                                 # encoder_grads_03 = tf.gradients(solver_loss, encoder_vars)
                                 encoder_grads_03 = tf.gradients(encoder_net, encoder_vars, grad_s)
+                                encoder_grads_04 = tf.gradients(encoder_net, encoder_vars, grad_e)
                                 encoder_grads = \
                                     list(zip([grads_01 + self.commit_loss_gamma * grads_02 +
-                                              self.solver_gamma * grads_03
-                                              for grads_01, grads_02, grads_03
-                                              in zip(encoder_grads_01, encoder_grads_02, encoder_grads_03)],
+                                              self.solver_gamma * grads_03 + 0.1 * grads_04
+                                              for grads_01, grads_02, grads_03, grads_04
+                                              in zip(encoder_grads_01, encoder_grads_02,
+                                                     encoder_grads_03, encoder_grads_04)],
                                              encoder_vars))
                                 # Embedding Grads
                                 embed_grads = list(zip(tf.gradients(q_loss, codebook), [codebook]))
