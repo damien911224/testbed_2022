@@ -2403,8 +2403,8 @@ class Networks:
                                     distances = tf.reduce_sum(tf.square(tf.subtract(
                                         tf.expand_dims(net, axis=-2),
                                         tf.reshape(codebook, (1, 1, 1, 1, 1, K, c)))), axis=-1)
+                                    distances = tf.reshape(distances, (-1, K))
                                     min_indices = tf.argmin(distances, axis=-1)
-                                    min_indices = tf.reshape(min_indices, (-1, ))
                                     vq_predictions = tf.one_hot(min_indices, self.K)
                                     vq_predictions = tf.reshape(vq_predictions, (N, T, H, W, G, K))
                                     self.vq_predictions.append(vq_predictions)
@@ -2416,7 +2416,7 @@ class Networks:
                                     # N, T, H, W, G, K
                                     probs = tf.nn.softmax(-distances, axis=-1)
                                     # K
-                                    probs = tf.reduce_mean(probs, axis=(0, 1, 2, 3, 4))
+                                    probs = tf.reduce_mean(probs, axis=0)
                                     entropy = tf.reduce_sum(-probs * tf.log(probs + 1.0e-7), axis=-1)
 
                                     # N, T, H, W, C = net.get_shape().as_list()
