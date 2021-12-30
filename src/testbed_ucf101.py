@@ -2656,7 +2656,7 @@ class Networks:
                                     # N, T, H, W, G
                                     solver_loss = -tf.reduce_sum(t * tf.log(p + 1.0e-7), axis=-1)
                                     # N, T, H, W
-                                    solver_loss = -tf.reduce_mean(solver_loss, axis=-1)
+                                    solver_loss = tf.reduce_mean(solver_loss, axis=-1)
                                     solver_loss = tf.multiply(solver_loss, 1.0 - masks)
                                     solver_loss = tf.reduce_sum(solver_loss, axis=(1, 2, 3))
                                     solver_loss = tf.divide(solver_loss,
@@ -3723,6 +3723,7 @@ class Networks:
                 raise (ValueError("Invalid type of the normalization method"))
 
             return out
+
 
 if __name__ == "__main__":
 
