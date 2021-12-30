@@ -2826,7 +2826,7 @@ class Networks:
                                     commit_loss = tf.reduce_mean(tf.square(tf.norm(
                                         encoder_net - tf.stop_gradient(gathered_words), axis=-1)))
 
-                                    vq_loss = reconstruction_loss + q_loss + 0.25 * commit_loss
+                                    vq_loss = reconstruction_loss + q_loss + 0.00 * commit_loss
 
                                     self.reconstruction_loss += vq_loss
 
@@ -2945,7 +2945,7 @@ class Networks:
                                 # encoder_grads_03 = tf.gradients(solver_loss, encoder_vars)
                                 encoder_grads_03 = tf.gradients(encoder_net, encoder_vars, grad_s)
                                 encoder_grads = \
-                                    list(zip([grads_01 + 0.25 * grads_02 + self.solver_gamma * grads_03
+                                    list(zip([grads_01 + 0.00 * grads_02 + self.solver_gamma * grads_03
                                               for grads_01, grads_02, grads_03
                                               in zip(encoder_grads_01, encoder_grads_02, encoder_grads_03)],
                                              encoder_vars))
