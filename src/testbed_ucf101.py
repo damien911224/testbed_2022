@@ -2259,7 +2259,7 @@ class Networks:
             self.K = 256
             self.solver_num_layers = 2
             self.solver_gamma = 0.1
-            self.commit_loss_gamma = 0.05
+            self.commit_loss_gamma = 0.01
             self.decoder_num_layers = 2
 
             if batch_size is None:
