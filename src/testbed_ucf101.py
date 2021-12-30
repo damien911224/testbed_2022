@@ -2259,6 +2259,7 @@ class Networks:
             self.K = 256
             self.solver_num_layers = 2
             self.solver_gamma = 0.1
+            self.commit_loss_gamma = 0.05
             self.decoder_num_layers = 2
 
             if batch_size is None:
@@ -2725,62 +2726,62 @@ class Networks:
                                     #                                                 trainable=self.is_training)
                                     #             net = tf.nn.relu(net)
                                     split = 0
-                                    # decoder_end_points = dict()
-                                    # net = I3D_reverse.build_model(inputs=net,
-                                    #                               weight_decay=self.weight_decay,
-                                    #                               end_points=decoder_end_points,
-                                    #                               dtype=self.networks.dtype,
-                                    #                               dformat=self.networks.dformat,
-                                    #                               is_training=self.is_training,
-                                    #                               scope=self.i3d_name + "_Reverse")
+                                    decoder_end_points = dict()
+                                    net = I3D_reverse.build_model(inputs=net,
+                                                                  weight_decay=self.weight_decay,
+                                                                  end_points=decoder_end_points,
+                                                                  dtype=self.networks.dtype,
+                                                                  dformat=self.networks.dformat,
+                                                                  is_training=self.is_training,
+                                                                  scope=self.i3d_name + "_Reverse")
                                     split = 0
-                                    memory = tf.identity(gathered_words)
-                                    N, T, H, W, C = memory.get_shape().as_list()
-                                    memory = tf.reshape(memory, (N, -1, C))
-                                    _, target_T, target_H, target_W, _ = inputs.get_shape().as_list()
-                                    S_scale = 1.0 / (2 ** 4)
-                                    T_scale = 1.0 / (2 ** 2)
-                                    target_L = (target_T * T_scale) * (target_H * S_scale) * (target_W * S_scale)
-                                    target_L = int(round(target_L))
-                                    with tf.variable_scope("EncoderPositionEmbeddings_0a", reuse=tf.AUTO_REUSE):
-                                        PE_E = tf.get_variable(name="position_embeddings",
-                                                               dtype=self.networks.dtype,
-                                                               shape=[T * H * W, C],
-                                                               initializer=kernel_initializer,
-                                                               trainable=self.is_training)
-
-                                    with tf.variable_scope("DecoderPositionEmbeddings_0a", reuse=tf.AUTO_REUSE):
-                                        PE_D = tf.get_variable(name="position_embeddings",
-                                                               dtype=self.networks.dtype,
-                                                               shape=[target_L, C],
-                                                               initializer=kernel_initializer,
-                                                               trainable=self.is_training)
-
-                                    net = tf.identity(PE_D)
-                                    net = tf.tile(tf.expand_dims(net, axis=0), (N, 1, 1))
-                                    for layer_index in range(self.decoder_num_layers):
-                                        end_point = "GuideView_{}a".format(layer_index + 1)
-                                        with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-                                            net, attention_scores = \
-                                                self.guide_view_1d(
-                                                    x=net, y=memory,
-                                                    position_embeddings=PE_E,
-                                                    query_embeddings=PE_D,
-                                                    is_training=self.is_training,
-                                                    num_heads=8,
-                                                    relative_position=False,
-                                                    activation_function=tf.nn.relu,
-                                                    kernel_initializer=kernel_initializer,
-                                                    kernel_regularizer=kernel_regularizer,
-                                                    bias_initializer=bias_initializer,
-                                                    bias_regularizer=bias_regularizer,
-                                                    dtype=self.networks.dtype,
-                                                    dformat="NWC"
-                                                    if self.networks.dformat == "NDHWC"
-                                                    else "NCW")
-                                    net = tf.reshape(net, (N, int(round(target_T * T_scale)),
-                                                           int(round(target_H * S_scale)),
-                                                           int(round(target_W * S_scale)), C))
+                                    # memory = tf.identity(gathered_words)
+                                    # N, T, H, W, C = memory.get_shape().as_list()
+                                    # memory = tf.reshape(memory, (N, -1, C))
+                                    # _, target_T, target_H, target_W, _ = inputs.get_shape().as_list()
+                                    # S_scale = 1.0 / (2 ** 4)
+                                    # T_scale = 1.0 / (2 ** 2)
+                                    # target_L = (target_T * T_scale) * (target_H * S_scale) * (target_W * S_scale)
+                                    # target_L = int(round(target_L))
+                                    # with tf.variable_scope("EncoderPositionEmbeddings_0a", reuse=tf.AUTO_REUSE):
+                                    #     PE_E = tf.get_variable(name="position_embeddings",
+                                    #                            dtype=self.networks.dtype,
+                                    #                            shape=[T * H * W, C],
+                                    #                            initializer=kernel_initializer,
+                                    #                            trainable=self.is_training)
+                                    #
+                                    # with tf.variable_scope("DecoderPositionEmbeddings_0a", reuse=tf.AUTO_REUSE):
+                                    #     PE_D = tf.get_variable(name="position_embeddings",
+                                    #                            dtype=self.networks.dtype,
+                                    #                            shape=[target_L, C],
+                                    #                            initializer=kernel_initializer,
+                                    #                            trainable=self.is_training)
+                                    #
+                                    # net = tf.identity(PE_D)
+                                    # net = tf.tile(tf.expand_dims(net, axis=0), (N, 1, 1))
+                                    # for layer_index in range(self.decoder_num_layers):
+                                    #     end_point = "GuideView_{}a".format(layer_index + 1)
+                                    #     with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    #         net, attention_scores = \
+                                    #             self.guide_view_1d(
+                                    #                 x=net, y=memory,
+                                    #                 position_embeddings=PE_E,
+                                    #                 query_embeddings=PE_D,
+                                    #                 is_training=self.is_training,
+                                    #                 num_heads=8,
+                                    #                 relative_position=False,
+                                    #                 activation_function=tf.nn.relu,
+                                    #                 kernel_initializer=kernel_initializer,
+                                    #                 kernel_regularizer=kernel_regularizer,
+                                    #                 bias_initializer=bias_initializer,
+                                    #                 bias_regularizer=bias_regularizer,
+                                    #                 dtype=self.networks.dtype,
+                                    #                 dformat="NWC"
+                                    #                 if self.networks.dformat == "NDHWC"
+                                    #                 else "NCW")
+                                    # net = tf.reshape(net, (N, int(round(target_T * T_scale)),
+                                    #                        int(round(target_H * S_scale)),
+                                    #                        int(round(target_W * S_scale)), C))
                                     split = 0
 
                                     low_level_features = tf.stop_gradient(inputs)
@@ -2826,7 +2827,7 @@ class Networks:
                                     commit_loss = tf.reduce_mean(tf.square(tf.norm(
                                         encoder_net - tf.stop_gradient(gathered_words), axis=-1)))
 
-                                    vq_loss = reconstruction_loss + q_loss + 0.00 * commit_loss
+                                    vq_loss = reconstruction_loss + q_loss + self.commit_loss_gamma * commit_loss
 
                                     self.reconstruction_loss += vq_loss
 
@@ -2945,7 +2946,8 @@ class Networks:
                                 # encoder_grads_03 = tf.gradients(solver_loss, encoder_vars)
                                 encoder_grads_03 = tf.gradients(encoder_net, encoder_vars, grad_s)
                                 encoder_grads = \
-                                    list(zip([grads_01 + 0.00 * grads_02 + self.solver_gamma * grads_03
+                                    list(zip([grads_01 + self.commit_loss_gamma * grads_02 +
+                                              self.solver_gamma * grads_03
                                               for grads_01, grads_02, grads_03
                                               in zip(encoder_grads_01, encoder_grads_02, encoder_grads_03)],
                                              encoder_vars))
