@@ -2413,7 +2413,7 @@ class Networks:
                                     gathered_words = tf.reshape(gathered_words, (N, T, H, W, G, c))
                                     gathered_words = tf.concat(tf.unstack(gathered_words, axis=-2), axis=-1)
 
-                                    # N, T, H, W, G, K
+                                    # NTHWG, K
                                     probs = tf.nn.softmax(-distances, axis=-1)
                                     # K
                                     probs = tf.reduce_mean(probs, axis=0)
