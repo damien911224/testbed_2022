@@ -2738,7 +2738,7 @@ class Networks:
                                     N, T, H, W, C = memory.get_shape().as_list()
                                     memory = tf.reshape(memory, (N, -1, C))
                                     _, target_T, target_H, target_W, _ = inputs.get_shape().as_list()
-                                    S_scale = 1.0 / (2 ** 3)
+                                    S_scale = 1.0 / (2 ** 4)
                                     T_scale = 1.0 / (2 ** 2)
                                     target_L = (target_T * T_scale) * (target_H * S_scale) * (target_W * S_scale)
                                     target_L = int(round(target_L))
