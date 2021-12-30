@@ -2394,28 +2394,27 @@ class Networks:
                                     # K, _ = T_codebook.get_shape().as_list()
 
                                     N, T, H, W, C = net.get_shape().as_list()
-                                    # N, G, T, H, W, c
-                                    net = tf.stack(tf.split(net, self.num_groups, axis=-1), axis=1)
+                                    # N, T, H, W, G, c
+                                    net = tf.stack(tf.split(net, self.num_groups, axis=-1), axis=-2)
                                     K, c = codebook.get_shape().as_list()
                                     G = self.num_groups
 
-                                    # N, K, G, T, H, W
+                                    # N, T, H, W, G, K
                                     distances = tf.reduce_sum(tf.square(tf.subtract(
-                                        tf.expand_dims(net, axis=1),
-                                        tf.reshape(codebook, (1, K, 1, 1, 1, 1, c)))), axis=-1)
-                                    min_indices = tf.argmin(distances, axis=1)
+                                        tf.expand_dims(net, axis=-2),
+                                        tf.reshape(codebook, (1, 1, 1, 1, 1, K, c)))), axis=-1)
+                                    min_indices = tf.argmin(distances, axis=-1)
                                     min_indices = tf.reshape(min_indices, (-1, ))
                                     vq_predictions = tf.one_hot(min_indices, self.K)
-                                    vq_predictions = tf.reshape(vq_predictions, (N, G, T, H, W, K))
-                                    vq_predictions = tf.transpose(vq_predictions, (0, 2, 3, 4, 1, 5))
+                                    vq_predictions = tf.reshape(vq_predictions, (N, T, H, W, G, K))
                                     self.vq_predictions.append(vq_predictions)
 
                                     gathered_words = tf.gather(codebook, min_indices)
-                                    gathered_words = tf.reshape(gathered_words, (N, G, T, H, W, c))
-                                    gathered_words = tf.concat(tf.unstack(gathered_words, axis=1), axis=-1)
+                                    gathered_words = tf.reshape(gathered_words, (N, T, H, W, G, c))
+                                    gathered_words = tf.concat(tf.unstack(gathered_words, axis=-2), axis=-1)
 
                                     # N, T, H, W, G, K
-                                    probs = tf.transpose(tf.nn.softmax(-distances, axis=1), (0, 3, 4, 5, 2, 1))
+                                    probs = tf.nn.softmax(-distances, axis=-1)
                                     # K
                                     probs = tf.reduce_mean(probs, axis=(0, 1, 2, 3, 4))
                                     entropy = tf.reduce_sum(-probs * tf.log(probs + 1.0e-7), axis=-1)
