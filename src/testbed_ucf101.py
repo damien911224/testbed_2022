@@ -2965,7 +2965,7 @@ class Networks:
                                 encoder_grads_04 = tf.gradients(encoder_net, encoder_vars, grad_e)
                                 encoder_grads = \
                                     list(zip([grads_01 + self.commit_loss_gamma * grads_02 +
-                                              self.solver_gamma * grads_03 + 10.0 * grads_04
+                                              self.solver_gamma * grads_03 + 10000.0 * grads_04
                                               for grads_01, grads_02, grads_03, grads_04
                                               in zip(encoder_grads_01, encoder_grads_02,
                                                      encoder_grads_03, encoder_grads_04)],
