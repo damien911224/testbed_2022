@@ -2259,7 +2259,7 @@ class Networks:
             self.K = 256
             self.num_groups = 8
             self.solver_num_layers = 2
-            self.solver_gamma = 0.1
+            self.solver_gamma = 0.0
             self.commit_loss_gamma = 0.25
             self.entropy_loss_gamma = 0.1
             self.decoder_num_layers = 2
@@ -2650,6 +2650,13 @@ class Networks:
                                     solver_loss = tf.reduce_mean(solver_loss, axis=0)
 
                                     self.solver_loss += solver_loss
+
+                                    probs = tf.reshape(p, (-1, self.K))
+                                    gathered_words = tf.multiply(tf.expand_dims(codebook, axis=0),
+                                                                 tf.expand_dims(probs, axis=-1))
+                                    gathered_words = tf.reduce_sum(gathered_words, axis=1)
+                                    gathered_words = tf.reshape(gathered_words, (N, T, H, W, G, c))
+                                    gathered_words = tf.concat(tf.unstack(gathered_words, axis=-2), axis=-1)
 
                                 end_point = "Decoder"
                                 net = tf.identity(gathered_words)
