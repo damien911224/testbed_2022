@@ -2653,7 +2653,7 @@ class Networks:
 
                                     N, T, H, W, G, K = net.get_shape().as_list()
                                     K, c = codebook.get_shape().as_list()
-                                    probs = tf.reshape(p, (-1, self.K))
+                                    probs = tf.reshape(p, (-1, K))
                                     gathered_words = tf.multiply(tf.expand_dims(codebook, axis=0),
                                                                  tf.expand_dims(probs, axis=-1))
                                     gathered_words = tf.reduce_sum(gathered_words, axis=1)
