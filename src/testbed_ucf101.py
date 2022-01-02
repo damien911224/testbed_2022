@@ -471,7 +471,7 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            self.epochs = 25
+            self.epochs = 200
         else:
             self.epochs = 25
         self.temporal_width = 16
@@ -513,8 +513,8 @@ class Networks:
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "1225"),
-                         "weights.ckpt-{}".format(25))
+                                                         "0101"),
+                         "weights.ckpt-{}".format(40))
 
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
@@ -543,7 +543,7 @@ class Networks:
             self.starter_learning_rate = 1.0e-2
 
         if self.dataset_name == "ucf101":
-            boundaries = [20, 23]
+            boundaries = [int(round(self.epochs * 0.80)), int(round(self.epochs * 0.90))]
         else:
             boundaries = [20, 23]
         values = [self.starter_learning_rate,
