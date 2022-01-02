@@ -3731,4 +3731,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain()
+    networks.finetune()
