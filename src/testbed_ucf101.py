@@ -1782,7 +1782,7 @@ class Networks:
                 target = np.array(class_index, dtype=np.int64)
 
                 masks = np.ones(dtype=np.float32, shape=(8 * 7 * 7))
-                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.1)))
+                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.5)))
                 for index in random_indices:
                     masks[index] = 0.0
 
@@ -1985,7 +1985,7 @@ class Networks:
                 target = np.array(class_index, dtype=np.int64)
 
                 masks = np.ones(dtype=np.float32, shape=(8 * 7 * 7))
-                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.1)))
+                random_indices = random.sample(range(8 * 7 * 7), int(round(8 * 7 * 7 * 0.5)))
                 for index in random_indices:
                     masks[index] = 0.0
 
@@ -3731,4 +3731,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.finetune()
+    networks.pretrain()
