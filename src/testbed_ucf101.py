@@ -268,6 +268,8 @@ class Networks:
 
                     print(np.argmax(solver_S_targets[0, :, :, 0], axis=-1))
                     print(np.argmax(solver_T_targets[0, :, 0], axis=-1))
+                    print(np.max(solver_S_targets[0, :, :, 0], axis=-1))
+                    print(np.max(solver_T_targets[0, :, 0], axis=-1))
 
                     _, loss, \
                     solver_loss, \
