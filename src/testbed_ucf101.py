@@ -258,8 +258,12 @@ class Networks:
                     epoch_preprocessing_time += time.time() - preprocessing_start_time
 
                     train_step_start_time = time.time()
+                    # solver_S_targets, solver_T_targets = \
+                    #     session.run([self.model_target.vq_S_predictions, self.model_target.vq_T_predictions],
+                    #                 feed_dict={self.model_target.frames: frame_vectors})
+
                     solver_S_targets, solver_T_targets = \
-                        session.run([self.model_target.vq_S_predictions, self.model_target.vq_T_predictions],
+                        session.run([self.model.vq_S_predictions, self.model.vq_T_predictions],
                                     feed_dict={self.model_target.frames: frame_vectors})
 
                     print(np.argmax(solver_S_targets[0, :, :, 0], axis=-1))
@@ -305,8 +309,8 @@ class Networks:
                     epoch_batch_iteration += 1
                     batch_iteration += 1
 
-                    if batch_iteration % self.target_update_term == 0:
-                        session.run(self.target_network_update_op)
+                    # if batch_iteration % self.target_update_term == 0:
+                    #     session.run(self.target_network_update_op)
 
                     epoch_time += time.time() - iteration_start_time
 
@@ -359,9 +363,9 @@ class Networks:
                         except tf.errors.OutOfRangeError:
                             break
 
-                        solver_S_targets, solver_T_targets = \
-                            session.run([self.model_target.vq_S_predictions, self.model_target.vq_T_predictions],
-                                        feed_dict={self.model_target.frames: frame_vectors})
+                        # solver_S_targets, solver_T_targets = \
+                        #     session.run([self.model_target.vq_S_predictions, self.model_target.vq_T_predictions],
+                        #                 feed_dict={self.model_target.frames: frame_vectors})
 
                         loss, solver_loss, reconstruction_loss, \
                         reconstruction_predictions = \
