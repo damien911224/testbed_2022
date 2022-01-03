@@ -264,7 +264,7 @@ class Networks:
 
                     solver_S_targets, solver_T_targets = \
                         session.run([self.model.vq_S_predictions, self.model.vq_T_predictions],
-                                    feed_dict={self.model_target.frames: frame_vectors})
+                                    feed_dict={self.model.frames: frame_vectors})
 
                     print(np.argmax(solver_S_targets[0, :, :, 0], axis=-1))
                     print(np.argmax(solver_T_targets[0, :, 0], axis=-1))
