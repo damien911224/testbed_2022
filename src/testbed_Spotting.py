@@ -1045,7 +1045,7 @@ class Networks:
         self.data_type = "images"
         self.flow_type = "tvl1"
         self.dataset = self.Dataset(self)
-        self.dataset_type = "all"
+        self.dataset_type = "training"
         self.make_data = self.dataset.getDataset("make", self.dataset_type)
 
         self.make_data.tf_dataset = self.make_data.tf_dataset.batch(1)
