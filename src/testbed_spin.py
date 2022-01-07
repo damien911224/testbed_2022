@@ -649,8 +649,7 @@ class Networks:
                     iteration_start_time = time.time()
                     preprocessing_start_time = time.time()
                     try:
-                        frame_vectors, target_vectors, masks = \
-                            session.run(self.train_next_element)
+                        frame_vectors, target_vectors = session.run(self.train_next_element)
                     except tf.errors.OutOfRangeError:
                         break
 
@@ -773,8 +772,7 @@ class Networks:
 
                     for validation_batch_index in range(loop_rounds):
                         try:
-                            frame_vectors, target_vectors, masks, identities = \
-                                session.run(self.validation_next_element)
+                            frame_vectors, target_vectors = session.run(self.validation_next_element)
                         except tf.errors.OutOfRangeError:
                             break
 
@@ -2355,7 +2353,7 @@ class Networks:
                 train_dataset = train_dataset.prefetch(5 * batch_size)
                 train_dataset = train_dataset.map(lambda video:
                                                   tf.py_func(self.sample,
-                                                             [video], [tf.float32, tf.int64, tf.float32, tf.float32]),
+                                                             [video], [tf.float32, tf.int64]),
                                                   num_parallel_calls=self.dataset.networks.num_workers)
                 train_dataset = train_dataset.batch(batch_size=batch_size, drop_remainder=True)
                 train_dataset = train_dataset.prefetch(5)
@@ -2450,16 +2448,7 @@ class Networks:
                     frame_vectors = np.transpose(frame_vectors, [3, 0, 1, 2])
                 target = np.array(class_index, dtype=np.int64)
 
-                S_masks = np.ones(dtype=np.float32, shape=(7 * 7))
-                random_indices = random.sample(range(len(S_masks)), int(round(len(S_masks) * 0.5)))
-                S_masks[random_indices] = 0.0
-                S_masks = np.reshape(S_masks, (7, 7))
-
-                T_masks = np.ones(dtype=np.float32, shape=(8))
-                random_indices = random.sample(range(len(T_masks)), int(round(len(T_masks) * 0.5)))
-                T_masks[random_indices] = 0.0
-
-                return frame_vectors, target, S_masks, T_masks
+                return frame_vectors, target
 
             def preprocessing(self, batch_datum):
                 splits = tf.string_split([batch_datum], delimiter=" ").values
@@ -2554,8 +2543,7 @@ class Networks:
                 validation_dataset = validation_dataset.prefetch(5 * batch_size)
                 validation_dataset = validation_dataset.map(lambda video:
                                                             tf.py_func(self.sample,
-                                                                       [video], [tf.float32, tf.int64,
-                                                                                 tf.float32, tf.float32, tf.string]),
+                                                                       [video], [tf.float32, tf.int64]),
                                                             num_parallel_calls=self.dataset.networks.num_workers)
                 validation_dataset = validation_dataset.batch(batch_size)
                 validation_dataset = validation_dataset.prefetch(5)
@@ -2650,23 +2638,12 @@ class Networks:
 
                         frame_vectors.append(flow)
 
-                identities = [identity] * len(frame_vectors)
-
                 if self.dataset.networks.dformat == "NCDHW":
                     frame_vectors = np.transpose(frame_vectors, [3, 0, 1, 2])
 
                 target = np.array(class_index, dtype=np.int64)
 
-                S_masks = np.ones(dtype=np.float32, shape=(7 * 7))
-                random_indices = random.sample(range(len(S_masks)), int(round(len(S_masks) * 0.5)))
-                S_masks[random_indices] = 0.0
-                S_masks = np.reshape(S_masks, (7, 7))
-
-                T_masks = np.ones(dtype=np.float32, shape=(8))
-                random_indices = random.sample(range(len(T_masks)), int(round(len(T_masks) * 0.5)))
-                T_masks[random_indices] = 0.0
-
-                return frame_vectors, target, S_masks, T_masks, identities
+                return frame_vectors, target
 
             def preprocessing(self, batch_datum):
                 splits = tf.string_split([batch_datum], delimiter=" ").values
