@@ -2963,7 +2963,7 @@ class Networks:
             self.dropout_prob = 0.5
 
             self.speed_gamma = 1.0
-            self.rotation_gamma = 0.5
+            self.rotation_gamma = 0.2
 
             if batch_size is None:
                 self.batch_size = \
