@@ -2997,7 +2997,7 @@ class Networks:
         def build_model(self):
             self.gradients = list()
             self.loss = 0.0
-            if self.phase == "pretrainig":
+            if self.phase == "pretraining":
                 self.speed_loss = 0.0
                 self.rotation_loss = 0.0
                 self.speed_accuracy = 0.0
