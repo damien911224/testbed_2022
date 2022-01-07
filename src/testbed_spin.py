@@ -472,7 +472,7 @@ class Networks:
             self.epochs = 200
         else:
             self.epochs = 25
-        self.temporal_width = 16
+        self.temporal_width = 64
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
