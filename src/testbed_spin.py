@@ -2428,21 +2428,14 @@ class Networks:
                 class_index = int(splits[2])
 
                 target_frames = list()
-                if frame_length >= self.dataset.networks.temporal_width:
-                    start_index = random.choice(list(range(1,
-                                                           frame_length -
-                                                           self.dataset.networks.temporal_width + 1 + 1,
-                                                           1)))
-                    end_index = start_index + self.dataset.networks.temporal_width - 1
-                    target_frames = list(range(start_index, end_index + 1, 1))
-                else:
-                    frame_index = 0
-                    while True:
-                        sampled_frame = 1 + (frame_index % frame_length)
-                        target_frames.append(sampled_frame)
-                        frame_index += 1
-                        if frame_index >= self.dataset.networks.temporal_width:
-                            break
+                start_index = random.choice(range(frame_length))
+                frame_index = 0
+                while True:
+                    sampled_frame = 1 + (start_index + math.floor(frame_index)) % frame_length
+                    target_frames.append(sampled_frame)
+                    frame_index += 1
+                    if frame_index >= self.dataset.networks.temporal_width:
+                        break
 
                 one_frame = cv2.imread(os.path.join(self.dataset.frames_folder, identity, "images", "img_00001.jpg"))
 
@@ -2618,21 +2611,14 @@ class Networks:
                 class_index = int(splits[2])
 
                 target_frames = list()
-                if frame_length >= self.dataset.networks.validation_temporal_width:
-                    start_index = random.choice(list(range(1,
-                                                           frame_length -
-                                                           self.dataset.networks.validation_temporal_width + 1 + 1,
-                                                           1)))
-                    end_index = start_index + self.dataset.networks.validation_temporal_width - 1
-                    target_frames = list(range(start_index, end_index + 1, 1))
-                else:
-                    frame_index = 0
-                    while True:
-                        sampled_frame = 1 + (frame_index % frame_length)
-                        target_frames.append(sampled_frame)
-                        frame_index += 1
-                        if frame_index >= self.dataset.networks.validation_temporal_width:
-                            break
+                start_index = random.choice(range(frame_length))
+                frame_index = 0
+                while True:
+                    sampled_frame = 1 + (start_index + math.floor(frame_index)) % frame_length
+                    target_frames.append(sampled_frame)
+                    frame_index += 1
+                    if frame_index >= self.dataset.networks.temporal_width:
+                        break
 
                 one_frame = cv2.imread(os.path.join(self.dataset.frames_folder, identity, "images", "img_00001.jpg"))
 
