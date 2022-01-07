@@ -1721,7 +1721,7 @@ class Networks:
                 rot_index = random.choice(range(4))
                 cum_rot_index = 0
                 targets = rot_index
-                transform_fn = transforms.ColorJitter(brightness=1.5, contrast=1.5, saturation=1.5, hue=0.25)
+                # transform_fn = transforms.ColorJitter(brightness=1.5, contrast=1.5, saturation=1.5, hue=0.25)
                 for frame_index in target_frames:
                     crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                     crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
@@ -1924,7 +1924,7 @@ class Networks:
                 rot_index = random.choice(range(4))
                 cum_rot_index = 0
                 targets = rot_index
-                transform_fn = transforms.ColorJitter(brightness=1.5, contrast=1.5, saturation=1.5, hue=0.25)
+                # transform_fn = transforms.ColorJitter(brightness=1.5, contrast=1.5, saturation=1.5, hue=0.25)
                 for sampled_frame in target_frames:
                     if self.dataset.networks.data_type == "images":
                         if sampled_frame < 1 or sampled_frame > frame_length:
