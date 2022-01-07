@@ -273,11 +273,9 @@ class Networks:
                         time_indices = random.sample(range(self.temporal_width), 3)
 
                         target_labels = \
-                            [labels[targets[show_index, time_index]]
-                             for show_index, time_index in zip(show_indices, time_indices)]
+                            [labels[targets[show_index]] for show_index in show_indices]
                         prediction_labels = \
-                            [labels[predictions[show_index, time_index]]
-                             for show_index, time_index in zip(show_indices, time_indices)]
+                            [labels[predictions[show_index]] for show_index in show_indices]
 
                         print("{:<20s}: {:05d} |{:<20s}: {:03d}({:03d}/{:03d})\n" \
                               "{:<20s}: {:.9f}/{:.5f} ({:f})\n" \
@@ -371,14 +369,11 @@ class Networks:
                             else:
                                 show_indices = random.sample(range(0, len(predictions), 1), 3)
                             show_indices.sort()
-                            time_indices = random.sample(range(self.temporal_width), 3)
 
                             target_labels = \
-                                [labels[targets[show_index, time_index]]
-                                 for show_index, time_index in zip(show_indices, time_indices)]
+                                [labels[targets[show_index]] for show_index in show_indices]
                             prediction_labels = \
-                                [labels[predictions[show_index, time_index]]
-                                 for show_index, time_index in zip(show_indices, time_indices)]
+                                [labels[predictions[show_index]] for show_index in show_indices]
 
                             print(
                                 "{:<20s}: {:05d} |{:<20s}: {:03d}/{:03d}\n" \
