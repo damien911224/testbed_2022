@@ -1748,11 +1748,13 @@ class Networks:
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
                 frame_index = 0
+                count = 0
                 while True:
                     sampled_frame = 1 + (start_index + math.floor(frame_index)) % frame_length
                     target_frames.append(sampled_frame)
                     frame_index += speed_steps[speed_index]
-                    if frame_index >= self.dataset.networks.temporal_width:
+                    count += 1
+                    if count >= self.dataset.networks.temporal_width:
                         break
 
                 one_frame = cv2.imread(os.path.join(self.dataset.frames_folder, identity, "images", "img_00001.jpg"))
@@ -1953,11 +1955,13 @@ class Networks:
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
                 frame_index = 0
+                count = 0
                 while True:
                     sampled_frame = 1 + (start_index + math.floor(frame_index)) % frame_length
                     target_frames.append(sampled_frame)
                     frame_index += speed_steps[speed_index]
-                    if frame_index >= self.dataset.networks.temporal_width:
+                    count += 1
+                    if count >= self.dataset.networks.temporal_width:
                         break
 
                 one_frame = cv2.imread(os.path.join(self.dataset.frames_folder, identity, "images", "img_00001.jpg"))
