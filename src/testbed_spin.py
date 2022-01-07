@@ -113,8 +113,10 @@ class Networks:
         self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
                                                     momentum=0.9)
 
-        self.model = self.Model(self, is_training=True, phase="finetuning", data_type=self.data_type)
-        self.model_validation = self.Model(self, is_training=False, phase="finetuning", data_type=self.data_type)
+        self.model = self.Model(self, is_training=True, phase="pretraining",
+                                data_type=self.data_type, num_classes=4)
+        self.model_validation = self.Model(self, is_training=False, phase="pretraining",
+                                           data_type=self.data_type, num_classes=4)
         self.model.build_model()
         self.model_validation.build_model()
 
@@ -1706,9 +1708,10 @@ class Networks:
                 is_flip = np.random.choice([True, False], 1)
 
                 frames = list()
-                targets = list()
                 rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
+                rot_index = random.choice(range(4))
                 cum_rot_index = 0
+                targets = rot_index
                 for frame_index in target_frames:
                     if self.dataset.networks.data_type == "images":
                         if frame_index < 1 or frame_index > frame_length:
@@ -1729,8 +1732,6 @@ class Networks:
                             image = np.divide(image, 255.0)
                             image = np.multiply(np.subtract(image, 0.5), 2.0)
 
-                            rot_index = random.choice(range(4))
-                            targets.append(rot_index)
                             cum_rot_index += rot_index
                             cum_rot_index %= 4
                             if cum_rot_index >= 1:
@@ -1762,12 +1763,10 @@ class Networks:
                             flow = np.divide(flow, 255.0)
                             flow = np.multiply(np.subtract(flow, 0.5), 2.0)
 
-                        rot_index = random.choice(range(4))
-                        targets.append(rot_index)
                         cum_rot_index += rot_index
                         cum_rot_index %= 4
                         if cum_rot_index >= 1:
-                            image = cv2.rotate(flow, rot_degrees[cum_rot_index - 1])
+                            flow = cv2.rotate(flow, rot_degrees[cum_rot_index - 1])
 
                         frames.append(flow)
 
@@ -1904,9 +1903,10 @@ class Networks:
                 height, width, _ = one_frame.shape
 
                 frames = list()
-                targets = list()
                 rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
+                rot_index = random.choice(range(4))
                 cum_rot_index = 0
+                targets = rot_index
                 for sampled_frame in target_frames:
                     if self.dataset.networks.data_type == "images":
                         if sampled_frame < 1 or sampled_frame > frame_length:
@@ -1928,8 +1928,6 @@ class Networks:
                             image = np.divide(image, 255.0)
                             image = np.multiply(np.subtract(image, 0.5), 2.0)
 
-                        rot_index = random.choice(range(4))
-                        targets.append(rot_index)
                         cum_rot_index += rot_index
                         cum_rot_index %= 4
                         if cum_rot_index >= 1:
@@ -1972,17 +1970,15 @@ class Networks:
                                 flow = np.divide(flow, 255.0)
                                 flow = np.multiply(np.subtract(flow, 0.5), 2.0)
 
-                        rot_index = random.choice(range(4))
-                        targets.append(rot_index)
                         cum_rot_index += rot_index
                         cum_rot_index %= 4
                         if cum_rot_index >= 1:
-                            image = cv2.rotate(flow, rot_degrees[cum_rot_index - 1])
+                            flow = cv2.rotate(flow, rot_degrees[cum_rot_index - 1])
 
                         frames.append(flow)
 
                 if self.dataset.networks.dformat == "NCDHW":
-                    frame_vectors = np.transpose(frames, [3, 0, 1, 2])
+                    frames = np.transpose(frames, [3, 0, 1, 2])
 
                 return frames, targets
 
