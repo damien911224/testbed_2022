@@ -22,8 +22,6 @@ from shutil import rmtree, copyfile
 from scipy.ndimage.filters import gaussian_filter1d
 from sklearn.manifold import TSNE
 import itertools
-from PIL import Image
-from torchvision import transforms
 
 
 class Networks:
@@ -1721,7 +1719,6 @@ class Networks:
                 rot_index = random.choice(range(4))
                 cum_rot_index = 0
                 targets = rot_index
-                transform_fn = transforms.ColorJitter(brightness=1.5, contrast=1.5, saturation=1.5, hue=0.25)
                 for frame_index in target_frames:
                     if self.dataset.networks.data_type == "images":
                         if frame_index < 1 or frame_index > frame_length:
@@ -1737,10 +1734,6 @@ class Networks:
                                     crop_left:crop_left + self.dataset.networks.input_size[0], :]
                             if is_flip:
                                 image = cv2.flip(image, 1)
-
-                            image = Image.fromarray(image)
-                            image = transform_fn(image)
-                            image = np.array(image)
 
                             image = image.astype(np.float32)
                             image = np.divide(image, 255.0)
@@ -1921,7 +1914,6 @@ class Networks:
                 rot_index = random.choice(range(4))
                 cum_rot_index = 0
                 targets = rot_index
-                transform_fn = transforms.ColorJitter(brightness=1.5, contrast=1.5, saturation=1.5, hue=0.25)
                 for sampled_frame in target_frames:
                     if self.dataset.networks.data_type == "images":
                         if sampled_frame < 1 or sampled_frame > frame_length:
@@ -1939,11 +1931,6 @@ class Networks:
                             crop_left = total_crop_width // 2
                             image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
                                     crop_left:crop_left + self.dataset.networks.input_size[0], :]
-
-                            image = Image.fromarray(image)
-                            image = transform_fn(image)
-                            image = np.array(image)
-
                             image = image.astype(np.float32)
                             image = np.divide(image, 255.0)
                             image = np.multiply(np.subtract(image, 0.5), 2.0)
