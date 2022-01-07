@@ -1968,6 +1968,11 @@ class Networks:
 
                 height, width, _ = one_frame.shape
 
+                total_crop_height = (height - self.dataset.networks.input_size[1])
+                # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                total_crop_width = (width - self.dataset.networks.input_size[0])
+                # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+
                 frames = list()
                 rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
                 rot_index = random.choice(range(4))
@@ -1975,6 +1980,8 @@ class Networks:
                 targets = [speed_index, rot_index]
                 # transform_fn = transforms.ColorJitter(brightness=1.5, contrast=1.5, saturation=1.5, hue=0.25)
                 for sampled_frame in target_frames:
+                    crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                    crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     if self.dataset.networks.data_type == "images":
                         if sampled_frame < 1 or sampled_frame > frame_length:
                             image = np.zeros(dtype=np.float32,
@@ -1985,10 +1992,10 @@ class Networks:
                             image_path = os.path.join(self.dataset.frames_folder, identity,
                                                       "{}_{:05d}.jpg".format(self.dataset.prefix, sampled_frame))
                             image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-                            total_crop_height = (height - self.dataset.networks.input_size[1])
-                            crop_top = total_crop_height // 2
-                            total_crop_width = (width - self.dataset.networks.input_size[0])
-                            crop_left = total_crop_width // 2
+                            # total_crop_height = (height - self.dataset.networks.input_size[1])
+                            # crop_top = total_crop_height // 2
+                            # total_crop_width = (width - self.dataset.networks.input_size[0])
+                            # crop_left = total_crop_width // 2
                             image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
                                     crop_left:crop_left + self.dataset.networks.input_size[0], :]
 
