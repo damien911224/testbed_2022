@@ -485,7 +485,7 @@ class Networks:
         self.validation_display_term = self.display_term
         self.ckpt_save_term = 5
 
-        self.dataset = self.Dataset(self)
+        self.dataset = self.FinetuningDataset(self)
 
         self.train_data, self.validation_data = self.dataset.getDataset("train")
         self.train_iterator = self.train_data.tf_dataset.make_initializable_iterator()
