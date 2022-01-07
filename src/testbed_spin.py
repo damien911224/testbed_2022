@@ -50,7 +50,7 @@ class Networks:
         self.temporal_width = 16
         self.display_term = 1
         self.dtype = tf.float32
-        self.dformat = "NCDHW"
+        self.dformat = "NDHWC"
 
         self.model_name = "I3D"
         now = time.localtime()
