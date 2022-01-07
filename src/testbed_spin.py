@@ -270,7 +270,6 @@ class Networks:
                         else:
                             show_indices = random.sample(range(0, len(predictions), 1), 3)
                         show_indices.sort()
-                        time_indices = random.sample(range(self.temporal_width), 3)
 
                         target_labels = \
                             [labels[targets[show_index]] for show_index in show_indices]
@@ -504,7 +503,7 @@ class Networks:
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
                                                          "0101"),
-                         "weights.ckpt-{}".format(40))
+                         "weights.ckpt-{}".format(7))
 
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
@@ -3858,4 +3857,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain()
+    networks.finetune()
