@@ -159,12 +159,22 @@ class Networks:
             self.current_learning_rate_summary = tf.summary.scalar("current_learning_rate",
                                                                    self.current_learning_rate_ph)
 
+            image_summary_size = 10 * 3
+            self.image_summary_ph = \
+                tf.placeholder(dtype=tf.uint8,
+                               shape=(image_summary_size, 224, 224 * 16 + 10 * 15, 3))
+            self.image_summary = \
+                tf.summary.image("input_images",
+                                 self.image_summary_ph,
+                                 max_outputs=image_summary_size)
+
             self.train_summaries = tf.summary.merge([self.variable_summary, self.loss_summary,
                                                      self.accuracy_summary,
                                                      self.current_learning_rate_summary])
 
             self.validation_summaries = tf.summary.merge([self.loss_summary,
-                                                          self.accuracy_summary])
+                                                          self.accuracy_summary,
+                                                          self.image_summary])
 
         os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join([str(device_id) for device_id in range(self.num_gpus)])
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -336,6 +346,7 @@ class Networks:
 
                     validation_loss = 0.0
                     validation_accuracy = 0.0
+                    input_images = list()
 
                     loop_rounds = max(int(math.ceil(float(self.validation_size) /
                                                     float(self.validation_batch_size * self.num_gpus))),
@@ -397,13 +408,28 @@ class Networks:
                                     show_indices[2] + 1, target_labels[2],
                                     show_indices[2] + 1, prediction_labels[2]))
 
+                        if validation_batch_index < 10:
+                            sampled_indices = random.sample(range(len(frame_vectors)), 3)
+                            for n_i in sampled_indices:
+                                sampled_t = random.choice(range(self.temporal_width - 16 + 1))
+                                t_image = np.array(((frame_vectors[n_i] + 1.0) / 2.0) * 255.0, dtype=np.uint8)
+                                buffer = np.zeros(dtype=np.uint8, shape=(224, 10, 3))
+                                images = list()
+                                for t_i in range(sampled_t, sampled_t + 16):
+                                    images.append(t_image[t_i])
+                                    if t_i < sampled_t + 16 - 1:
+                                        images.append(buffer)
+                                image = np.concatenate(images, axis=1)
+                                input_images.append(image)
+
                     validation_loss /= float(loop_rounds)
                     validation_accuracy /= float(loop_rounds)
 
                     validation_summary = \
                         session.run(self.validation_summaries,
                                     feed_dict={self.loss_summary_ph: validation_loss,
-                                               self.accuracy_summary_ph: validation_accuracy})
+                                               self.accuracy_summary_ph: validation_accuracy,
+                                               self.image_summary_ph: input_images})
                     self.validation_summary_writer.add_summary(validation_summary, epoch)
 
                     validation_quality = 0.5 * validation_accuracy - 0.5 * validation_loss
