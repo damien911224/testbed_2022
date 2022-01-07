@@ -341,7 +341,7 @@ class Networks:
 
                     for validation_batch_index in range(loop_rounds):
                         try:
-                            frame_vectors, target_vectors, masks, identities = \
+                            frame_vectors, target_vectors = \
                                 session.run(self.validation_next_element)
                         except tf.errors.OutOfRangeError:
                             break
