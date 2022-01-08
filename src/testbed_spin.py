@@ -1784,20 +1784,22 @@ class Networks:
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
-                        # image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-                        # image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
-                        #         crop_left:crop_left + self.dataset.networks.input_size[0], :]
-                        # if is_flip:
-                        #     image = cv2.flip(image, 1)
-                        image = Image.open(image_path)
-                        image = image.crop((crop_left, crop_top,
-                                            crop_left + self.dataset.networks.input_size[0],
-                                            crop_top + self.dataset.networks.input_size[1]))
+
+                        image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
+                        image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
+                                crop_left:crop_left + self.dataset.networks.input_size[0], :]
                         if is_flip:
-                            image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
+                            image = cv2.flip(image, 1)
+
+                        # image = Image.open(image_path)
+                        # image = image.crop((crop_left, crop_top,
+                        #                     crop_left + self.dataset.networks.input_size[0],
+                        #                     crop_top + self.dataset.networks.input_size[1]))
+                        # if is_flip:
+                        #     image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
                         # image = rand_aug(image)
-                        image = np.asarray(image)
+                        # image = np.asarray(image)
 
                         image = image.astype(np.float32)
                         image = np.divide(image, 255.0)
@@ -1993,20 +1995,22 @@ class Networks:
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, sampled_frame))
-                        # image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-                        # image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
-                        #         crop_left:crop_left + self.dataset.networks.input_size[0], :]
-                        # if is_flip:
-                        #     image = cv2.flip(image, 1)
-                        image = Image.open(image_path)
-                        image = image.crop((crop_left, crop_top,
-                                            crop_left + self.dataset.networks.input_size[0],
-                                            crop_top + self.dataset.networks.input_size[1]))
+
+                        image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
+                        image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
+                                crop_left:crop_left + self.dataset.networks.input_size[0], :]
                         if is_flip:
-                            image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
+                            image = cv2.flip(image, 1)
+
+                        # image = Image.open(image_path)
+                        # image = image.crop((crop_left, crop_top,
+                        #                     crop_left + self.dataset.networks.input_size[0],
+                        #                     crop_top + self.dataset.networks.input_size[1]))
+                        # if is_flip:
+                        #     image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
                         # image = rand_aug(image)
-                        image = np.asarray(image)
+                        # image = np.asarray(image)
 
                         image = image.astype(np.float32)
                         image = np.divide(image, 255.0)
