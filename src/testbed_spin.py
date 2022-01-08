@@ -1782,32 +1782,32 @@ class Networks:
                     rand_aug.m = random.choice(range(1, 30))
 
                     if self.dataset.networks.data_type == "images":
-                        if frame_index < 1 or frame_index > frame_length:
-                            image = np.zeros(dtype=np.float32,
-                                             shape=(self.dataset.networks.input_size[1],
-                                                    self.dataset.networks.input_size[0],
-                                                    3))
-                        else:
-                            image_path = os.path.join(self.dataset.frames_folder, identity,
-                                                      "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
-                            image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-                            image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
-                                    crop_left:crop_left + self.dataset.networks.input_size[0], :]
-                            if is_flip:
-                                image = cv2.flip(image, 1)
+                        image_path = os.path.join(self.dataset.frames_folder, identity,
+                                                  "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
+                        # image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
+                        # image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
+                        #         crop_left:crop_left + self.dataset.networks.input_size[0], :]
+                        # if is_flip:
+                        #     image = cv2.flip(image, 1)
+                        image = Image.open(image_path)
+                        image = image.crop((crop_left, crop_top,
+                                            crop_left + self.dataset.networks.input_size[0],
+                                            crop_top + self.dataset.networks.input_size[1]))
+                        if is_flip:
+                            image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                            image = Image.fromarray(image)
-                            image = rand_aug(image)
-                            image = np.array(image)
+                        image = rand_aug(image)
+                        image = np.asarray(image)
 
-                            image = image.astype(np.float32)
-                            image = np.divide(image, 255.0)
-                            image = np.multiply(np.subtract(image, 0.5), 2.0)
+                        image = image.astype(np.float32)
+                        image = np.divide(image, 255.0)
+                        image = np.multiply(np.subtract(image, 0.5), 2.0)
 
-                            cum_rot_index += rot_index
-                            cum_rot_index %= 4
-                            if cum_rot_index >= 1:
-                                image = cv2.rotate(image, rot_degrees[cum_rot_index - 1])
+                        cum_rot_index += rot_index
+                        cum_rot_index %= 4
+                        if cum_rot_index >= 1:
+                            image = cv2.rotate(image, rot_degrees[cum_rot_index - 1])
+
                         frames.append(image)
                     elif self.dataset.networks.data_type == "flows":
                         if frame_index < 1 or frame_index > frame_length:
@@ -1976,6 +1976,8 @@ class Networks:
                 total_crop_width = (width - self.dataset.networks.input_size[0])
                 # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
+                is_flip = np.random.choice([True, False], 1)
+
                 frames = list()
                 rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
                 rot_index = random.choice(range(4))
@@ -1989,29 +1991,26 @@ class Networks:
                     rand_aug.m = random.choice(range(1, 30))
 
                     if self.dataset.networks.data_type == "images":
-                        if sampled_frame < 1 or sampled_frame > frame_length:
-                            image = np.zeros(dtype=np.float32,
-                                             shape=(self.dataset.networks.input_size[1],
-                                                    self.dataset.networks.input_size[0],
-                                                    3))
-                        else:
-                            image_path = os.path.join(self.dataset.frames_folder, identity,
-                                                      "{}_{:05d}.jpg".format(self.dataset.prefix, sampled_frame))
-                            image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-                            # total_crop_height = (height - self.dataset.networks.input_size[1])
-                            # crop_top = total_crop_height // 2
-                            # total_crop_width = (width - self.dataset.networks.input_size[0])
-                            # crop_left = total_crop_width // 2
-                            image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
-                                    crop_left:crop_left + self.dataset.networks.input_size[0], :]
+                        image_path = os.path.join(self.dataset.frames_folder, identity,
+                                                  "{}_{:05d}.jpg".format(self.dataset.prefix, sampled_frame))
+                        # image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
+                        # image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
+                        #         crop_left:crop_left + self.dataset.networks.input_size[0], :]
+                        # if is_flip:
+                        #     image = cv2.flip(image, 1)
+                        image = Image.open(image_path)
+                        image = image.crop((crop_left, crop_top,
+                                            crop_left + self.dataset.networks.input_size[0],
+                                            crop_top + self.dataset.networks.input_size[1]))
+                        if is_flip:
+                            image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                            image = Image.fromarray(image)
-                            image = rand_aug(image)
-                            image = np.array(image)
+                        image = rand_aug(image)
+                        image = np.asarray(image)
 
-                            image = image.astype(np.float32)
-                            image = np.divide(image, 255.0)
-                            image = np.multiply(np.subtract(image, 0.5), 2.0)
+                        image = image.astype(np.float32)
+                        image = np.divide(image, 255.0)
+                        image = np.multiply(np.subtract(image, 0.5), 2.0)
 
                         cum_rot_index += rot_index
                         cum_rot_index %= 4
