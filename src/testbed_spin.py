@@ -37,7 +37,7 @@ class Networks:
         print("=" * 90)
 
         self.is_server = True
-        self.batch_size = 16 if self.is_server else 2
+        self.batch_size = 4 if self.is_server else 2
         self.num_gpus = 4 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
@@ -49,7 +49,7 @@ class Networks:
             self.epochs = 200
         else:
             self.epochs = 25
-        self.temporal_width = 16
+        self.temporal_width = 64
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
