@@ -1771,7 +1771,7 @@ class Networks:
                 frames = list()
                 rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
                 rot_index = random.choice(range(4))
-                cum_rot_index = 0
+                cum_rot_index = random.choice(range(4))
                 targets = [speed_index, rot_index]
 
                 rand_aug = RandAugment(n=10, m=30)
@@ -1983,7 +1983,7 @@ class Networks:
                 frames = list()
                 rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
                 rot_index = random.choice(range(4))
-                cum_rot_index = 0
+                cum_rot_index = random.choice(range(4))
                 targets = [speed_index, rot_index]
                 rand_aug = RandAugment(n=10, m=30)
                 for sampled_frame in target_frames:
