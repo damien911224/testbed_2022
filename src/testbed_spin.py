@@ -24,7 +24,7 @@ from sklearn.manifold import TSNE
 import itertools
 from PIL import Image
 from torchvision import transforms
-
+from rand_augmentation import RandAugment
 
 class Networks:
 
@@ -46,7 +46,7 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            self.epochs = 60
+            self.epochs = 200
         else:
             self.epochs = 25
         self.temporal_width = 64
@@ -1773,10 +1773,13 @@ class Networks:
                 rot_index = random.choice(range(4))
                 cum_rot_index = 0
                 targets = [speed_index, rot_index]
-                # transform_fn = transforms.ColorJitter(brightness=1.5, contrast=1.5, saturation=1.5, hue=0.25)
+
+                rand_aug = RandAugment(n=15, m=30)
                 for frame_index in target_frames:
                     crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                     crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                    rand_aug.n = random.choice(range(3, 15))
+                    rand_aug.m = random.choice(range(1, 30))
 
                     if self.dataset.networks.data_type == "images":
                         if frame_index < 1 or frame_index > frame_length:
@@ -1793,9 +1796,9 @@ class Networks:
                             if is_flip:
                                 image = cv2.flip(image, 1)
 
-                            # image = Image.fromarray(image)
-                            # image = transform_fn(image)
-                            # image = np.array(image)
+                            image = Image.fromarray(image)
+                            image = rand_aug(image)
+                            image = np.array(image)
 
                             image = image.astype(np.float32)
                             image = np.divide(image, 255.0)
@@ -1978,10 +1981,13 @@ class Networks:
                 rot_index = random.choice(range(4))
                 cum_rot_index = 0
                 targets = [speed_index, rot_index]
-                # transform_fn = transforms.ColorJitter(brightness=1.5, contrast=1.5, saturation=1.5, hue=0.25)
+                rand_aug = RandAugment(n=15, m=30)
                 for sampled_frame in target_frames:
                     crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                     crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                    rand_aug.n = random.choice(range(3, 15))
+                    rand_aug.m = random.choice(range(1, 30))
+
                     if self.dataset.networks.data_type == "images":
                         if sampled_frame < 1 or sampled_frame > frame_length:
                             image = np.zeros(dtype=np.float32,
@@ -1999,9 +2005,9 @@ class Networks:
                             image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
                                     crop_left:crop_left + self.dataset.networks.input_size[0], :]
 
-                            # image = Image.fromarray(image)
-                            # image = transform_fn(image)
-                            # image = np.array(image)
+                            image = Image.fromarray(image)
+                            image = rand_aug(image)
+                            image = np.array(image)
 
                             image = image.astype(np.float32)
                             image = np.divide(image, 255.0)
@@ -2970,7 +2976,7 @@ class Networks:
             self.dropout_prob = 0.5
 
             self.speed_gamma = 1.0
-            self.rotation_gamma = 0.1
+            self.rotation_gamma = 0.05
 
             if batch_size is None:
                 self.batch_size = \
