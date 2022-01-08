@@ -1774,12 +1774,12 @@ class Networks:
                 cum_rot_index = random.choice(range(4))
                 targets = [speed_index, rot_index]
 
-                rand_aug = RandAugment(n=10, m=30)
+                rand_aug = RandAugment(n=2, m=5)
                 for frame_index in target_frames:
                     crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                     crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
-                    rand_aug.n = random.choice(range(1, 3))
-                    rand_aug.m = random.choice(range(1, 10))
+                    rand_aug.n = random.choice(range(2))
+                    rand_aug.m = random.choice(range(5))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
@@ -1985,12 +1985,12 @@ class Networks:
                 rot_index = random.choice(range(4))
                 cum_rot_index = random.choice(range(4))
                 targets = [speed_index, rot_index]
-                rand_aug = RandAugment(n=10, m=30)
+                rand_aug = RandAugment(n=2, m=5)
                 for sampled_frame in target_frames:
                     crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                     crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
-                    rand_aug.n = random.choice(range(1, 3))
-                    rand_aug.m = random.choice(range(1, 10))
+                    rand_aug.n = random.choice(range(2))
+                    rand_aug.m = random.choice(range(5))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
