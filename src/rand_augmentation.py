@@ -193,11 +193,11 @@ def augment_list():  # 16 oeprations and their ranges
         (Contrast, 0.1, 1.9),
         (Brightness, 0.1, 1.9),
         (Sharpness, 0.1, 1.9),
-        (ShearX, 0., 0.3),
-        (ShearY, 0., 0.3),
-        (CutoutAbs, 0, 40),
-        (TranslateXabs, 0., 100),
-        (TranslateYabs, 0., 100),
+        # (ShearX, 0., 0.3),
+        # (ShearY, 0., 0.3),
+        # (CutoutAbs, 0, 40),
+        # (TranslateXabs, 0., 100),
+        # (TranslateYabs, 0., 100),
     ]
 
     return l
