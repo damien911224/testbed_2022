@@ -34,7 +34,7 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            self.epochs = 200
+            self.epochs = 60
         else:
             self.epochs = 25
         self.temporal_width = 16
@@ -2972,7 +2972,7 @@ class Networks:
             self.dropout_prob = 0.5
 
             self.speed_gamma = 0.0
-            self.rotation_gamma = 0.1
+            self.rotation_gamma = 1.0
 
             if batch_size is None:
                 self.batch_size = \
