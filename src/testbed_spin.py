@@ -1,6 +1,5 @@
 import tensorflow as tf
 import os
-import sys
 import numpy as np
 import glob
 import json
@@ -8,22 +7,11 @@ import cv2
 import random
 import math
 import time
-import I3D, I3D_reverse
-import gc
-import matplotlib
-import tqdm
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
-import matplotlib.transforms as transforms
+import I3D
 from tensorflow.python.ops import math_ops
-from shutil import rmtree, copyfile
-from scipy.ndimage.filters import gaussian_filter1d
-from sklearn.manifold import TSNE
-import itertools
+from shutil import rmtree
+import argparse
 from PIL import Image
-from torchvision import transforms
 from rand_augmentation import RandAugment
 
 class Networks:
@@ -31,7 +19,7 @@ class Networks:
     def __init__(self):
         self.input_size = (224, 224, 3)
 
-    def pretrain(self):
+    def pretrain(self, postfix):
         print("=" * 90)
         print("Networks Training")
         print("=" * 90)
@@ -77,19 +65,22 @@ class Networks:
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
                          "networks", "weights",
-                         "save", "{}_{}_{}_{}_{}".format(self.model_name,
-                                                         self.dataset_name.upper(),
-                                                         "RGB" if self.data_type == "images" else "Flow",
-                                                         "Pretraining",
-                                                         self.train_date))
+                         "save", "{}_{}_{}_{}_{}{}".format(
+                    self.model_name,
+                    self.dataset_name.upper(),
+                    "RGB" if self.data_type == "images" else "Flow",
+                    "Pretraining",
+                    self.train_date, "" if postfix is None else "_" + postfix))
 
         self.summary_folder = os.path.join(self.dataset.root_path,
                                            "networks", "summaries",
-                                           "{}_{}_{}_{}_{}".format(self.model_name,
-                                                                   self.dataset_name.upper(),
-                                                                   "RGB" if self.data_type == "images" else "Flow",
-                                                                   "Pretraining",
-                                                                   self.train_date))
+                                           "{}_{}_{}_{}_{}{}".format(
+                                               self.model_name,
+                                               self.dataset_name.upper(),
+                                               "RGB" if self.data_type == "images" else "Flow",
+                                               "Pretraining",
+                                               self.train_date,
+                                               "" if postfix is None else "_" + postfix))
         self.train_summary_file_path = os.path.join(self.summary_folder, "train_summary")
         self.validation_summary_file_path = os.path.join(self.summary_folder, "validation_summary")
 
@@ -3953,6 +3944,12 @@ class Networks:
 
 if __name__ == "__main__":
 
+    argparser = argparse.ArgumentParser()
+
+    argparser.add_argument("--postfix", default=None)
+
+    args = argparser.parse_args()
+
     networks = Networks()
 
-    networks.pretrain()
+    networks.pretrain(postfix=args.postfix)
