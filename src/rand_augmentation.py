@@ -4,7 +4,7 @@ import random
 
 import PIL, PIL.ImageOps, PIL.ImageEnhance, PIL.ImageDraw
 import numpy as np
-import torch
+# import torch
 from PIL import Image
 
 
@@ -203,51 +203,51 @@ def augment_list():  # 16 oeprations and their ranges
     return l
 
 
-class Lighting(object):
-    """Lighting noise(AlexNet - style PCA - based noise)"""
+# class Lighting(object):
+#     """Lighting noise(AlexNet - style PCA - based noise)"""
+#
+#     def __init__(self, alphastd, eigval, eigvec):
+#         self.alphastd = alphastd
+#         self.eigval = torch.Tensor(eigval)
+#         self.eigvec = torch.Tensor(eigvec)
+#
+#     def __call__(self, img):
+#         if self.alphastd == 0:
+#             return img
+#
+#         alpha = img.new().resize_(3).normal_(0, self.alphastd)
+#         rgb = self.eigvec.type_as(img).clone() \
+#             .mul(alpha.view(1, 3).expand(3, 3)) \
+#             .mul(self.eigval.view(1, 3).expand(3, 3)) \
+#             .sum(1).squeeze()
+#
+#         return img.add(rgb.view(3, 1, 1).expand_as(img))
 
-    def __init__(self, alphastd, eigval, eigvec):
-        self.alphastd = alphastd
-        self.eigval = torch.Tensor(eigval)
-        self.eigvec = torch.Tensor(eigvec)
 
-    def __call__(self, img):
-        if self.alphastd == 0:
-            return img
-
-        alpha = img.new().resize_(3).normal_(0, self.alphastd)
-        rgb = self.eigvec.type_as(img).clone() \
-            .mul(alpha.view(1, 3).expand(3, 3)) \
-            .mul(self.eigval.view(1, 3).expand(3, 3)) \
-            .sum(1).squeeze()
-
-        return img.add(rgb.view(3, 1, 1).expand_as(img))
-
-
-class CutoutDefault(object):
-    """
-    Reference : https://github.com/quark0/darts/blob/master/cnn/utils.py
-    """
-
-    def __init__(self, length):
-        self.length = length
-
-    def __call__(self, img):
-        h, w = img.size(1), img.size(2)
-        mask = np.ones((h, w), np.float32)
-        y = np.random.randint(h)
-        x = np.random.randint(w)
-
-        y1 = np.clip(y - self.length // 2, 0, h)
-        y2 = np.clip(y + self.length // 2, 0, h)
-        x1 = np.clip(x - self.length // 2, 0, w)
-        x2 = np.clip(x + self.length // 2, 0, w)
-
-        mask[y1: y2, x1: x2] = 0.
-        mask = torch.from_numpy(mask)
-        mask = mask.expand_as(img)
-        img *= mask
-        return img
+# class CutoutDefault(object):
+#     """
+#     Reference : https://github.com/quark0/darts/blob/master/cnn/utils.py
+#     """
+#
+#     def __init__(self, length):
+#         self.length = length
+#
+#     def __call__(self, img):
+#         h, w = img.size(1), img.size(2)
+#         mask = np.ones((h, w), np.float32)
+#         y = np.random.randint(h)
+#         x = np.random.randint(w)
+#
+#         y1 = np.clip(y - self.length // 2, 0, h)
+#         y2 = np.clip(y + self.length // 2, 0, h)
+#         x1 = np.clip(x - self.length // 2, 0, w)
+#         x2 = np.clip(x + self.length // 2, 0, w)
+#
+#         mask[y1: y2, x1: x2] = 0.
+#         mask = torch.from_numpy(mask)
+#         mask = mask.expand_as(img)
+#         img *= mask
+#         return img
 
 
 class RandAugment:
