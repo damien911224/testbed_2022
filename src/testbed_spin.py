@@ -37,7 +37,7 @@ class Networks:
             self.epochs = 200
         else:
             self.epochs = 25
-        self.temporal_width = 64
+        self.temporal_width = 16
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
@@ -1734,8 +1734,9 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                speed_index = random.choice(range(4))
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
+                speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
                 frame_index = 0
@@ -1761,8 +1762,8 @@ class Networks:
 
                 frames = list()
                 rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_index = random.choice(range(4))
-                cum_rot_index = random.choice(range(4))
+                rot_index = random.choice(range(len(rot_degrees)))
+                cum_rot_index = random.choice(range(len(rot_degrees)))
                 targets = [speed_index, rot_index]
 
                 rand_aug = RandAugment(n=2, m=5)
@@ -1946,8 +1947,9 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                speed_index = random.choice(range(4))
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
+                speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
                 frame_index = 0
@@ -1973,8 +1975,8 @@ class Networks:
 
                 frames = list()
                 rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_index = random.choice(range(4))
-                cum_rot_index = random.choice(range(4))
+                rot_index = random.choice(range(len(rot_degrees)))
+                cum_rot_index = random.choice(range(len(rot_degrees)))
                 targets = [speed_index, rot_index]
                 rand_aug = RandAugment(n=2, m=5)
                 for sampled_frame in target_frames:
@@ -2969,7 +2971,7 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 1.0
+            self.speed_gamma = 0.0
             self.rotation_gamma = 0.1
 
             if batch_size is None:
