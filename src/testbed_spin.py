@@ -38,7 +38,7 @@ class Networks:
 
         self.is_server = True
         self.batch_size = 8 if self.is_server else 2
-        self.num_gpus = 4 if self.is_server else 1
+        self.num_gpus = 2 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
         self.dataset_name = "ucf101"
@@ -49,7 +49,7 @@ class Networks:
             self.epochs = 200
         else:
             self.epochs = 25
-        self.temporal_width = 64
+        self.temporal_width = 16
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
