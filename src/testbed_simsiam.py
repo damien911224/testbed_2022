@@ -3086,7 +3086,17 @@ class Networks:
                                                    if self.networks.dformat == "NDHWC"
                                                    else [2, 3, 4])
 
+                                Z = tf.stack(tf.split(Z, 2, axis=0), axis=-1)
+                                z_01 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 0]))
+                                z_02 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 1]))
 
+                                P = tf.stack(tf.split(P, 2, axis=0), axis=-1)
+                                p_01 = tf.math.l2_normalize(P[..., 0])
+                                p_02 = tf.math.l2_normalize(P[..., 1])
+
+                                loss = -(tf.reduce_mean(tf.reduce_sum(p_01 * z_02, axis=1), axis=0) / 2.0 +
+                                         tf.reduce_mean(tf.reduce_sum(p_02 * z_01, axis=1), axis=0) / 2.0)
+                                self.loss += loss
                             else:
                                 end_point = "Logits"
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
