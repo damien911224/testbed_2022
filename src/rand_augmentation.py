@@ -264,3 +264,17 @@ class RandAugment:
             img = op(img, val)
 
         return img
+
+class RandAugmentFixed:
+
+    def __init__(self, n):
+        self.n = n
+        self.augment_list = augment_list()
+        self.ops = random.choices(self.augment_list, k=self.n)
+
+    def __call__(self, img, m):
+        for op, minval, maxval in self.ops:
+            val = (float(m) / 30) * float(maxval - minval) + minval
+            img = op(img, val)
+
+        return img
