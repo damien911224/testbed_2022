@@ -500,7 +500,7 @@ class Networks:
                     print("Validation Rotation Accuracy {:.5f}".format(validation_rotation_accuracy))
                     print("=" * 90)
 
-    def finetune(self):
+    def finetune(self, postfix):
         print("=" * 90)
         print("Networks Training")
         print("=" * 90)
@@ -515,7 +515,7 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            self.epochs = 200
+            self.epochs = 100
         else:
             self.epochs = 25
         self.temporal_width = 64
@@ -556,19 +556,20 @@ class Networks:
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
                          "networks", "weights",
-                         "save", "{}_{}_{}_{}_{}".format(self.model_name,
+                         "save", "{}_{}_{}_{}_{}{}".format(self.model_name,
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Finetuning",
-                                                         self.train_date))
+                                                         self.train_date, "" if postfix is None else "_" + postfix))
 
         self.summary_folder = os.path.join(self.dataset.root_path,
                                            "networks", "summaries",
-                                           "{}_{}_{}_{}_{}".format(self.model_name,
-                                                                   self.dataset_name.upper(),
-                                                                   "RGB" if self.data_type == "images" else "Flow",
-                                                                   "Finetuning",
-                                                                   self.train_date))
+                                           "{}_{}_{}_{}_{}{}".format(
+                                               self.model_name,
+                                               self.dataset_name.upper(),
+                                               "RGB" if self.data_type == "images" else "Flow",
+                                               "Finetuning",
+                                               self.train_date, "" if postfix is None else "_" + postfix))
         self.train_summary_file_path = os.path.join(self.summary_folder, "train_summary")
         self.validation_summary_file_path = os.path.join(self.summary_folder, "validation_summary")
 
@@ -3956,4 +3957,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain(postfix=args.postfix)
+    networks.finetune(postfix=args.postfix)
