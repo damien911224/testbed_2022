@@ -1797,7 +1797,7 @@ class Networks:
                         image = np.divide(image, 255.0)
                         image = np.multiply(np.subtract(image, 0.5), 2.0)
 
-                        cum_rot_index += rot_index
+                        # cum_rot_index += rot_index
                         cum_rot_index %= 4
                         if cum_rot_index >= 1:
                             image = cv2.rotate(image, rot_degrees[cum_rot_index - 1])
@@ -2009,7 +2009,7 @@ class Networks:
                         image = np.divide(image, 255.0)
                         image = np.multiply(np.subtract(image, 0.5), 2.0)
 
-                        cum_rot_index += rot_index
+                        # cum_rot_index += rot_index
                         cum_rot_index %= 4
                         if cum_rot_index >= 1:
                             image = cv2.rotate(image, rot_degrees[cum_rot_index - 1])
