@@ -550,7 +550,7 @@ class Networks:
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0110"),
+                                                         "0110_no_spin"),
                          "weights.ckpt-{}".format(60))
 
         self.save_ckpt_file_folder = \
