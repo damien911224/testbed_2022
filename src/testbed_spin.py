@@ -3954,4 +3954,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain(postfix=args.postfix)
+    networks.pretraining(postfix=args.postfix)
