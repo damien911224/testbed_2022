@@ -1597,10 +1597,10 @@ class Networks:
                 self.dataset_folder = os.path.join("/mnt/hdd1/UCF101")
                 self.target_path = os.path.join(self.meta_folder, "ucf101.json")
                 self.class_label_path = os.path.join(self.meta_folder, "ucf101_classes.txt")
-            elif self.networks.dataset_name == "activitynet":
-                self.dataset_folder = os.path.join("/mnt/hdd0/ActivityNet/v1.3")
-                self.target_path = os.path.join(self.meta_folder, "activity_net.v1.3.min.json")
-                self.class_label_path = os.path.join(self.meta_folder, "activitynet_classes.txt")
+            elif self.networks.dataset_name == "kinetics":
+                self.dataset_folder = os.path.join("/mnt/hdd0/Kinetics-400")
+                self.target_path = os.path.join(self.meta_folder, "kinetics-400.json")
+                self.class_label_path = os.path.join(self.meta_folder, "kinetics-400_classes.txt")
 
             if self.video_fps >= 25.0:
                 self.frames_folder = os.path.join(self.dataset_folder, "frames")
