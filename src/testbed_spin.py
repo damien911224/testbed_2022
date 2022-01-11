@@ -1676,12 +1676,12 @@ class Networks:
                                                       "ucf101_{}_{}_training_data.json".format(
                                                           "adaptive",
                                                           self.dataset.networks.dataset_split))
-                elif self.dataset.networks.dataset_name == "activitynet":
+                elif self.dataset.networks.dataset_name == "kinetics":
                     if self.dataset.video_fps >= 25.0:
-                        json_file_path = os.path.join(self.dataset.meta_folder, "activitynet_train_data.json")
+                        json_file_path = os.path.join(self.dataset.meta_folder, "kinetics_train_data.json")
                     else:
                         json_file_path = os.path.join(self.dataset.meta_folder,
-                                                      "activitynet_{}_train_data.json".format(
+                                                      "kinetics_{}_train_data.json".format(
                                                           int(self.dataset.video_fps)))
 
                 if os.path.exists(json_file_path):
@@ -1689,29 +1689,47 @@ class Networks:
                         tf_data = json.load(fp)
                 else:
                     print("There is no json file. Make the json file")
-                    videos = glob.glob(os.path.join(self.dataset.videos_folder, "*"))
-                    tf_data = list()
-                    for index, video in enumerate(videos):
-                        identity = os.path.basename(video).split(".")[-2]
-                        frames = len(glob.glob(os.path.join(self.dataset.frames_folder, identity, "images", "*")))
+                    if self.dataset.networks.dataset_name == "ucf101":
+                        videos = glob.glob(os.path.join(self.dataset.videos_folder, "*"))
+                        tf_data = list()
+                        for index, video in enumerate(videos):
+                            identity = os.path.basename(video).split(".")[-2]
+                            frames = len(glob.glob(os.path.join(self.dataset.frames_folder, identity, "images", "*")))
 
-                        splits = self.dataset.meta_dic["database"][identity]["splits"]
-                        split = splits[str(self.dataset.networks.dataset_split)]
-                        if split == "training":
-                            annotations = self.dataset.meta_dic["database"][identity]["annotations"]
+                            splits = self.dataset.meta_dic["database"][identity]["splits"]
+                            split = splits[str(self.dataset.networks.dataset_split)]
+                            if split == "training":
+                                annotations = self.dataset.meta_dic["database"][identity]["annotations"]
+
+                                if not frames:
+                                    continue
+
+                                tf_datum = "{} {} {}".format(identity, frames, annotations)
+                                tf_data.append(tf_datum)
+
+                                print("VIDEO {}: {:05d}/{:05d} Done".format(identity, index + 1, len(videos)))
+                            else:
+                                print("VIDEO {}: {:05d}/{:05d} Pass".format(identity, index + 1, len(videos)))
+
+                        with open(json_file_path, "w") as fp:
+                            json.dump(tf_data, fp, indent=4, sort_keys=True)
+                    else:
+                        videos = glob.glob(os.path.join(self.dataset.dataset_folder, "training", "*"))
+                        tf_data = list()
+                        for index, video in enumerate(videos):
+                            identity = os.path.basename(video).split(".")[-2]
+                            frames = len(glob.glob(os.path.join(self.dataset.frames_folder, identity, "images", "*")))
 
                             if not frames:
                                 continue
 
-                            tf_datum = "{} {} {}".format(identity, frames, annotations)
+                            tf_datum = "{} {}".format(identity, frames)
                             tf_data.append(tf_datum)
 
                             print("VIDEO {}: {:05d}/{:05d} Done".format(identity, index + 1, len(videos)))
-                        else:
-                            print("VIDEO {}: {:05d}/{:05d} Pass".format(identity, index + 1, len(videos)))
 
-                    with open(json_file_path, "w") as fp:
-                        json.dump(tf_data, fp, indent=4, sort_keys=True)
+                        with open(json_file_path, "w") as fp:
+                            json.dump(tf_data, fp, indent=4, sort_keys=True)
 
                 self.data_count = len(tf_data)
 
@@ -1890,12 +1908,12 @@ class Networks:
                                                       "ucf101_{}_{}_validation_data.json".format(
                                                           "adaptive",
                                                           self.dataset.networks.dataset_split))
-                elif self.dataset.networks.dataset_name == "activitynet":
+                elif self.dataset.networks.dataset_name == "kinetics":
                     if self.dataset.video_fps >= 25.0:
-                        json_file_path = os.path.join(self.dataset.meta_folder, "activitynet_validation_data.json")
+                        json_file_path = os.path.join(self.dataset.meta_folder, "kinetics_validation_data.json")
                     else:
                         json_file_path = os.path.join(self.dataset.meta_folder,
-                                                      "activitynet_{}_validation_data.json".format(
+                                                      "kinetics_{}_validation_data.json".format(
                                                           int(self.dataset.video_fps)))
 
                 if os.path.exists(json_file_path):
@@ -1903,29 +1921,47 @@ class Networks:
                         tf_data = json.load(fp)
                 else:
                     print("There is no json file. Make the json file")
-                    videos = glob.glob(os.path.join(self.dataset.videos_folder, "*"))
-                    tf_data = list()
-                    for index, video in enumerate(videos):
-                        identity = os.path.basename(video).split(".")[-2]
-                        frames = len(glob.glob(os.path.join(self.dataset.frames_folder, identity, "images", "*")))
+                    if self.dataset.dataset_name == "ucf101":
+                        videos = glob.glob(os.path.join(self.dataset.videos_folder, "*"))
+                        tf_data = list()
+                        for index, video in enumerate(videos):
+                            identity = os.path.basename(video).split(".")[-2]
+                            frames = len(glob.glob(os.path.join(self.dataset.frames_folder, identity, "images", "*")))
 
-                        splits = self.dataset.meta_dic["database"][identity]["splits"]
-                        split = splits[str(self.dataset.networks.dataset_split)]
-                        if split == "validation":
-                            annotations = self.dataset.meta_dic["database"][identity]["annotations"]
+                            splits = self.dataset.meta_dic["database"][identity]["splits"]
+                            split = splits[str(self.dataset.networks.dataset_split)]
+                            if split == "validation":
+                                annotations = self.dataset.meta_dic["database"][identity]["annotations"]
+
+                                if not frames:
+                                    continue
+
+                                tf_datum = "{} {} {}".format(identity, frames, annotations)
+                                tf_data.append(tf_datum)
+
+                                print("VIDEO {}: {:05d}/{:05d} Done".format(identity, index + 1, len(videos)))
+                            else:
+                                print("VIDEO {}: {:05d}/{:05d} Pass".format(identity, index + 1, len(videos)))
+
+                        with open(json_file_path, "w") as fp:
+                            json.dump(tf_data, fp, indent=4, sort_keys=True)
+                    else:
+                        videos = glob.glob(os.path.join(self.dataset.dataset_folder, "validation", "*"))
+                        tf_data = list()
+                        for index, video in enumerate(videos):
+                            identity = os.path.basename(video).split(".")[-2]
+                            frames = len(glob.glob(os.path.join(self.dataset.frames_folder, identity, "images", "*")))
 
                             if not frames:
                                 continue
 
-                            tf_datum = "{} {} {}".format(identity, frames, annotations)
+                            tf_datum = "{} {}".format(identity, frames)
                             tf_data.append(tf_datum)
 
                             print("VIDEO {}: {:05d}/{:05d} Done".format(identity, index + 1, len(videos)))
-                        else:
-                            print("VIDEO {}: {:05d}/{:05d} Pass".format(identity, index + 1, len(videos)))
 
-                    with open(json_file_path, "w") as fp:
-                        json.dump(tf_data, fp, indent=4, sort_keys=True)
+                        with open(json_file_path, "w") as fp:
+                            json.dump(tf_data, fp, indent=4, sort_keys=True)
 
                 print("Making Tensorflow Validation Dataset Object ... {} Instances".format(len(tf_data)))
                 self.data_count = len(tf_data)
