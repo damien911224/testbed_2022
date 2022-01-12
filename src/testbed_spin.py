@@ -947,7 +947,7 @@ class Networks:
         self.validation_temporal_width = self.temporal_width
         self.validation_display_term = 1
 
-        self.dataset = self.FineTuningDataset(self)
+        self.dataset = self.FinetuningDataset(self)
 
         self.validation_data = self.dataset.getDataset("test")
         self.validation_iterator = self.validation_data.tf_dataset.make_initializable_iterator()
