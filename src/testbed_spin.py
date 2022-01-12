@@ -60,7 +60,7 @@ class Networks:
 
         self.validation_iterator = self.validation_data.tf_dataset.make_one_shot_iterator()
         self.validation_next_element = self.validation_iterator.get_next()
-        self.validation_size = self.validation_data.data_count // 1
+        self.validation_size = self.validation_data.data_count // 10 if self.dataset_name == "kinetics" else 1
 
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
@@ -1952,9 +1952,6 @@ class Networks:
 
                         with open(json_file_path, "w") as fp:
                             json.dump(tf_data, fp, indent=4, sort_keys=True)
-
-                if self.dataset.networks.dataset_name == "kinetics":
-                    tf_data = random.sample(tf_data, 1000)
 
                 print("Making Tensorflow Validation Dataset Object ... {} Instances".format(len(tf_data)))
                 self.data_count = len(tf_data)
