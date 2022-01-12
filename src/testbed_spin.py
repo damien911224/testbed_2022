@@ -1911,7 +1911,7 @@ class Networks:
                         tf_data = json.load(fp)
                 else:
                     print("There is no json file. Make the json file")
-                    if self.dataset.dataset_name == "ucf101":
+                    if self.dataset.networks.dataset_name == "ucf101":
                         videos = glob.glob(os.path.join(self.dataset.videos_folder, "*"))
                         tf_data = list()
                         for index, video in enumerate(videos):
