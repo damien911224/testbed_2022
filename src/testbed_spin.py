@@ -935,7 +935,7 @@ class Networks:
         self.optimizer_type = "SGD"
         self.temporal_width = 32
         self.dtype = tf.float32
-        self.dformat = "NCDHW"
+        self.dformat = "NDHWC"
 
         self.model_name = "I3D"
         self.train_date = "1112"
