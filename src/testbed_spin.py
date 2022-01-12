@@ -937,10 +937,7 @@ class Networks:
         self.dtype = tf.float32
         self.dformat = "NCDHW"
 
-        if self.data_type == "images":
-            self.model_name = "UCF_RGB"
-        elif self.data_type == "flows":
-            self.model_name = "UCF_Flow"
+        self.model_name = "I3D"
         self.train_date = "1112"
 
         self.validation_batch_size = self.batch_size
