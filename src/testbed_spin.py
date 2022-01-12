@@ -29,14 +29,14 @@ class Networks:
         self.num_gpus = 2 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "ucf101"
+        self.dataset_name = "kinetics"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
             self.epochs = 60
         elif self.dataset_name == "kinetics":
-            self.epochs = 20
+            self.epochs = 10
         self.temporal_width = 16
         self.display_term = 1
         self.dtype = tf.float32
@@ -1584,7 +1584,7 @@ class Networks:
 
             self.meta_folder = os.path.join(self.root_path, "meta")
             if self.networks.dataset_name == "ucf101":
-                self.dataset_folder = os.path.join("/mnt/hdd0/UCF101")
+                self.dataset_folder = os.path.join("/mnt/hdd1/UCF101")
                 self.target_path = os.path.join(self.meta_folder, "ucf101.json")
                 self.class_label_path = os.path.join(self.meta_folder, "ucf101_classes.txt")
             elif self.networks.dataset_name == "kinetics":
@@ -1743,8 +1743,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                # speed_steps = [1.0]
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -1975,8 +1975,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                # speed_steps = [1.0]
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -2997,7 +2997,7 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 1.0
+            self.speed_gamma = 0.0
             self.rotation_gamma = 1.0
 
             if batch_size is None:
