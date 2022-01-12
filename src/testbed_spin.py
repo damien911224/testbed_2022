@@ -919,7 +919,7 @@ class Networks:
                     print("Validation Accuracy {:.5f}".format(validation_accuracy))
                     print("=" * 90)
 
-    def test(self):
+    def test(self, postfix):
         print("=" * 90)
         print("Testing")
         print("=" * 90)
