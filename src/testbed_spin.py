@@ -1704,7 +1704,7 @@ class Networks:
                         with open(json_file_path, "w") as fp:
                             json.dump(tf_data, fp, indent=4, sort_keys=True)
                     else:
-                        videos = glob.glob(os.path.join(self.dataset.dataset_folder, "training", "*"))
+                        videos = glob.glob(os.path.join(self.dataset.dataset_folder, "training", "*.mp4"))
                         tf_data = list()
                         for index, video in enumerate(videos):
                             identity = os.path.basename(video).split(".")[-2]
@@ -1936,7 +1936,7 @@ class Networks:
                         with open(json_file_path, "w") as fp:
                             json.dump(tf_data, fp, indent=4, sort_keys=True)
                     else:
-                        videos = glob.glob(os.path.join(self.dataset.dataset_folder, "validation", "*"))
+                        videos = glob.glob(os.path.join(self.dataset.dataset_folder, "validation", "*.mp4"))
                         tf_data = list()
                         for index, video in enumerate(videos):
                             identity = os.path.basename(video).split(".")[-2]
