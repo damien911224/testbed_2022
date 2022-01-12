@@ -35,8 +35,8 @@ class Networks:
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
             self.epochs = 60
-        else:
-            self.epochs = 25
+        elif self.dataset_name == "kinetics":
+            self.epochs = 20
         self.temporal_width = 16
         self.display_term = 1
         self.dtype = tf.float32
@@ -94,7 +94,7 @@ class Networks:
         if self.dataset_name == "ucf101":
             boundaries = [int(round(self.epochs * 0.80)), int(round(self.epochs * 0.90))]
         else:
-            boundaries = [20, 23]
+            boundaries = [int(round(self.epochs * 0.80)), int(round(self.epochs * 0.90))]
         values = [self.starter_learning_rate,
                   self.starter_learning_rate * 1.0e-1,
                   self.starter_learning_rate * 1.0e-2]
