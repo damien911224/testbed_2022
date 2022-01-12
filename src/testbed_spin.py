@@ -2919,6 +2919,7 @@ class Networks:
                                     flow = np.multiply(np.subtract(flow, 0.5), 2.0)
 
                             this_frame_vectors.append(flow)
+                    frame_vectors.append(this_frame_vectors)
 
                 target = np.array(class_index, dtype=np.int64)
                 frame_vectors = np.stack(frame_vectors, axis=0)
