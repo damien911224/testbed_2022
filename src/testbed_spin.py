@@ -1013,10 +1013,15 @@ class Networks:
                 validation_accuracy_count += 1
 
                 if (validation_batch_index + 1) % self.validation_display_term == 0:
-                    predictions = np.argmax(avg_predictions, axis=-1)
-                    targets = target_vectors
+                    predictions = np.argmax([avg_predictions], axis=-1)
+                    targets = [target_vectors]
 
-                    show_indices = [0, 0, 0]
+                    if len(predictions) < 3:
+                        show_indices = list(range(0, len(predictions), 1))
+                        for _ in range(3 - len(predictions)):
+                            show_indices.append(random.sample(range(0, len(predictions), 1), 1)[0])
+                    else:
+                        show_indices = random.sample(range(0, len(predictions), 1), 3)
                     show_indices.sort()
 
                     target_labels = \
