@@ -1954,7 +1954,7 @@ class Networks:
                             json.dump(tf_data, fp, indent=4, sort_keys=True)
 
                 if self.dataset.networks.dataset_name == "kinetics":
-                    tf_data = random.sample(tf_data, 2000)
+                    tf_data = random.sample(tf_data, 1000)
 
                 print("Making Tensorflow Validation Dataset Object ... {} Instances".format(len(tf_data)))
                 self.data_count = len(tf_data)
