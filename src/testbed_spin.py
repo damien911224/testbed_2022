@@ -556,7 +556,7 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            self.epochs = 100
+            self.epochs = 60
         else:
             self.epochs = 25
         self.temporal_width = 64
