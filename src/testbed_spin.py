@@ -588,11 +588,11 @@ class Networks:
             os.path.join(self.dataset.root_path,
                          "networks", "weights",
                          "save", "{}_{}_{}_{}_{}".format(self.model_name,
-                                                         self.dataset_name.upper(),
+                                                         "KINETICS",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0110_no_spin"),
-                         "weights.ckpt-{}".format(60))
+                                                         "0113"),
+                         "weights.ckpt-{}".format(10))
 
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
@@ -4037,4 +4037,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain(postfix=args.postfix)
+    networks.finetune(postfix=args.postfix)
