@@ -591,7 +591,7 @@ class Networks:
                                                          "KINETICS",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0113_no_spin"),
+                                                         "0113"),
                          "weights.ckpt-{}".format(10))
 
         self.save_ckpt_file_folder = \
@@ -619,7 +619,7 @@ class Networks:
         if self.optimizer_type == "Adam":
             self.starter_learning_rate = 2.0e-4
         else:
-            self.starter_learning_rate = 1.0e-2
+            self.starter_learning_rate = 1.0e-3
 
         if self.dataset_name == "ucf101":
             boundaries = [int(round(self.epochs * 0.80)), int(round(self.epochs * 0.90))]
