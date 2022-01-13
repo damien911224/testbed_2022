@@ -13,6 +13,7 @@ from shutil import rmtree
 import argparse
 from PIL import Image
 from rand_augmentation import RandAugment
+import matplotlib.cm as cm
 
 class Networks:
 
@@ -162,6 +163,14 @@ class Networks:
                                  self.image_summary_ph,
                                  max_outputs=image_summary_size)
 
+            self.cam_summary_ph = \
+                tf.placeholder(dtype=tf.uint8,
+                               shape=(image_summary_size, 448, 224 * 16 + 10 * 15, 3))
+            self.cam_summary = \
+                tf.summary.image("cam_images",
+                                 self.cam_summary_ph,
+                                 max_outputs=image_summary_size)
+
             self.train_summaries = tf.summary.merge([self.variable_summary,
                                                      self.loss_summary,
                                                      self.speed_loss_summary,
@@ -175,7 +184,8 @@ class Networks:
                                                           self.rotation_loss_summary,
                                                           self.speed_accuracy_summary,
                                                           self.rotation_accuracy_summary,
-                                                          self.image_summary])
+                                                          self.image_summary,
+                                                          self.cam_summary])
 
         os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join([str(device_id) for device_id in range(self.num_gpus)])
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -356,6 +366,7 @@ class Networks:
                     validation_rotation_loss = 0.0
                     validation_speed_accuracy = 0.0
                     validation_rotation_accuracy = 0.0
+                    cam_images = list()
                     input_images = list()
 
                     loop_rounds = max(int(math.ceil(float(self.validation_size) /
@@ -374,6 +385,8 @@ class Networks:
                         rotation_loss, \
                         speed_accuracy, \
                         rotation_accuracy, \
+                        speed_cams, \
+                        rotation_cams, \
                         speed_predictions, \
                         rotation_predictions = \
                             session.run(
@@ -382,6 +395,8 @@ class Networks:
                                  self.model_validation.rotation_loss,
                                  self.model_validation.speed_accuracy,
                                  self.model_validation.rotation_accuracy,
+                                 self.model_validation.speed_cams,
+                                 self.model_validation.rotation_cams,
                                  self.model_validation.speed_predictions,
                                  self.model_validation.rotation_predictions],
                                 feed_dict={self.model_validation.frames: frame_vectors,
@@ -434,17 +449,41 @@ class Networks:
                                     show_indices[2] + 1, speed_prediction_labels[2], rotation_prediction_labels[2]))
 
                         if validation_batch_index < 10:
+                            # Use jet colormap to colorize heatmap
+                            jet = cm.get_cmap("jet")
+                            # Use RGB values of the colormap
+                            jet_colors = jet(np.arange(256))[:, :3]
+                            buffer = np.zeros(dtype=np.uint8, shape=(224, 10, 3))
                             sampled_indices = random.sample(range(len(frame_vectors)), 3)
                             for n_i in sampled_indices:
                                 sampled_t = random.choice(range(self.temporal_width - 16 + 1))
+                                s_cam = np.array(speed_cams[n_i] * 255.0, dtype=np.uint8)
+                                r_cam = np.array(rotation_cams[n_i] * 255.0, dtype=np.uint8)
                                 t_image = np.array(((frame_vectors[n_i] + 1.0) / 2.0) * 255.0, dtype=np.uint8)
-                                buffer = np.zeros(dtype=np.uint8, shape=(224, 10, 3))
+                                cams = list()
                                 images = list()
                                 for t_i in range(sampled_t, sampled_t + 16):
                                     images.append(t_image[t_i])
                                     if t_i < sampled_t + 16 - 1:
                                         images.append(buffer)
+
+                                    speed_cam = s_cam[t_i]
+                                    speed_cam = jet_colors[speed_cam]
+                                    speed_cam = speed_cam * 0.4 + t_image[t_i]
+                                    speed_cam = np.clip(np.round(speed_cam), 0.0, 255.0).astype(dtype=np.uint8)
+                                    rotation_cam = r_cam[t_i]
+                                    rotation_cam = jet_colors[rotation_cam]
+                                    rotation_cam = rotation_cam * 0.4 + t_image[t_i]
+                                    rotation_cam = np.clip(np.round(rotation_cam), 0.0, 255.0).astype(dtype=np.uint8)
+
+                                    cam_image = np.concatenate([speed_cam, rotation_cam], axis=0)
+                                    cams.append(cam_image)
+                                    if t_i < sampled_t + 16 - 1:
+                                        cams.append(buffer)
+
+                                cam = np.concatenate(cams, axis=1)
                                 image = np.concatenate(images, axis=1)
+                                cam_images.append(cam)
                                 input_images.append(image)
 
                     validation_loss /= float(loop_rounds)
@@ -460,7 +499,8 @@ class Networks:
                                                self.rotation_loss_summary_ph: validation_rotation_loss,
                                                self.speed_accuracy_summary_ph: validation_speed_accuracy,
                                                self.rotation_accuracy_summary_ph: validation_rotation_accuracy,
-                                               self.image_summary_ph: input_images})
+                                               self.image_summary_ph: input_images,
+                                               self.cam_summary_ph: cam_images})
                     self.validation_summary_writer.add_summary(validation_summary, epoch)
 
                     validation_quality = -0.5 * validation_loss
@@ -1585,7 +1625,7 @@ class Networks:
 
             self.meta_folder = os.path.join(self.root_path, "meta")
             if self.networks.dataset_name == "ucf101":
-                self.dataset_folder = os.path.join("/mnt/hdd0/UCF101")
+                self.dataset_folder = os.path.join("/mnt/hdd1/UCF101")
                 self.target_path = os.path.join(self.meta_folder, "ucf101.json")
                 self.class_label_path = os.path.join(self.meta_folder, "ucf101_classes.txt")
             elif self.networks.dataset_name == "kinetics":
@@ -3042,6 +3082,8 @@ class Networks:
                 self.rotation_loss = 0.0
                 self.speed_accuracy = 0.0
                 self.rotation_accuracy = 0.0
+                self.speed_cams = list()
+                self.rotation_cams = list()
                 self.speed_predictions = list()
                 self.rotation_predictions = list()
             else:
@@ -3108,6 +3150,7 @@ class Networks:
 
                             end_point = "Logits"
                             with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                encoder_net = tf.identity(net)
                                 N, T, H, W, C = net.get_shape().as_list()
                                 with tf.variable_scope("AvgPool_0a_2xHxW", reuse=tf.AUTO_REUSE):
                                     net = tf.nn.avg_pool3d(net,
@@ -3154,11 +3197,6 @@ class Networks:
                                                  axis=[1, 2, 3]
                                                  if self.networks.dformat == "NDHWC"
                                                  else [2, 3, 4])
-                            try:
-                                self.end_points[end_point] = \
-                                    tf.concat([self.end_points[end_point], net], axis=0)
-                            except KeyError:
-                                self.end_points[end_point] = net
 
                             if self.batch_size is not None:
                                 targets = self.targets[
@@ -3202,6 +3240,22 @@ class Networks:
                                 self.rotation_loss += rotation_loss
                                 loss = self.speed_gamma * speed_loss + self.rotation_gamma * rotation_loss
                                 self.loss += loss
+
+                                speed_p = tf.one_hot(tf.argmax(speed_logits, axis=-1), depth=4, axis=-1)
+                                speed_p = tf.stop_gradient(speed_p)
+                                speed_cams = tf.gradients(tf.reduce_sum(speed_p * speed_logits), inputs)[0]
+                                rotation_p = tf.one_hot(tf.argmax(rotation_logits, axis=-1), depth=4, axis=-1)
+                                rotation_p = tf.stop_gradient(rotation_p)
+                                rotation_cams = tf.gradients(tf.reduce_sum(rotation_p * rotation_logits), inputs)[0]
+
+                                speed_cams = tf.maximum(tf.reduce_sum(speed_cams, axis=-1), 0.0)
+                                speed_cams -= tf.reduce_min(speed_cams)
+                                speed_cams /= tf.reduce_max(speed_cams) + 1.0e-7
+                                self.speed_cams.append(speed_cams)
+                                rotation_cams = tf.maximum(tf.reduce_sum(rotation_cams, axis=-1), 0.0)
+                                rotation_cams -= tf.reduce_min(rotation_cams)
+                                rotation_cams /= tf.reduce_max(rotation_cams) + 1.0e-7
+                                self.rotation_cams.append(rotation_cams)
                             else:
                                 self.predictions.append(tf.nn.softmax(net, axis=-1))
 
@@ -3245,6 +3299,8 @@ class Networks:
                     self.rotation_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.speed_accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.rotation_accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
+                    self.speed_cams = tf.concat(self.speed_cams, axis=0)
+                    self.rotation_cams = tf.concat(self.rotation_cams, axis=0)
                     self.speed_predictions = tf.concat(self.speed_predictions, axis=0)
                     self.rotation_predictions = tf.concat(self.rotation_predictions, axis=0)
                 else:
