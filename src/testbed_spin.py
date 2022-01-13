@@ -591,7 +591,7 @@ class Networks:
                                                          "KINETICS",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0113"),
+                                                         "0113_no_spin"),
                          "weights.ckpt-{}".format(10))
 
         self.save_ckpt_file_folder = \
