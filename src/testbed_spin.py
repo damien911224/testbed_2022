@@ -479,7 +479,7 @@ class Networks:
                                     cam_image = np.concatenate([speed_cam, rotation_cam], axis=0)
                                     cams.append(cam_image)
                                     if t_i < sampled_t + 16 - 1:
-                                        cams.append(buffer)
+                                        cams.append(np.concatenate([buffer, buffer], axis=0))
 
                                 cam = np.concatenate(cams, axis=1)
                                 image = np.concatenate(images, axis=1)
