@@ -29,7 +29,7 @@ class Networks:
         self.num_gpus = 2 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "kinetics"
+        self.dataset_name = "ucf101"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
@@ -60,7 +60,7 @@ class Networks:
 
         self.validation_iterator = self.validation_data.tf_dataset.make_one_shot_iterator()
         self.validation_next_element = self.validation_iterator.get_next()
-        self.validation_size = self.validation_data.data_count // 10 if self.dataset_name == "kinetics" else 1
+        self.validation_size = self.validation_data.data_count // (10 if self.dataset_name == "kinetics" else 1)
 
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
@@ -1771,9 +1771,9 @@ class Networks:
 
                 frames = list()
                 rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_index = random.choice(range(len(rot_degrees)))
+                # rot_index = random.choice(range(len(rot_degrees)))
                 cum_rot_index = random.choice(range(len(rot_degrees)))
-                # rot_index = cum_rot_index
+                rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
 
                 rand_aug = RandAugment(n=2, m=5)
@@ -1807,7 +1807,7 @@ class Networks:
                         image = np.divide(image, 255.0)
                         image = np.multiply(np.subtract(image, 0.5), 2.0)
 
-                        cum_rot_index += rot_index
+                        # cum_rot_index += rot_index
                         cum_rot_index %= 4
                         if cum_rot_index >= 1:
                             image = cv2.rotate(image, rot_degrees[cum_rot_index - 1])
@@ -2003,9 +2003,9 @@ class Networks:
 
                 frames = list()
                 rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_index = random.choice(range(len(rot_degrees)))
+                # rot_index = random.choice(range(len(rot_degrees)))
                 cum_rot_index = random.choice(range(len(rot_degrees)))
-                # rot_index = cum_rot_index
+                rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
                 rand_aug = RandAugment(n=2, m=5)
                 for sampled_frame in target_frames:
@@ -2038,7 +2038,7 @@ class Networks:
                         image = np.divide(image, 255.0)
                         image = np.multiply(np.subtract(image, 0.5), 2.0)
 
-                        cum_rot_index += rot_index
+                        # cum_rot_index += rot_index
                         cum_rot_index %= 4
                         if cum_rot_index >= 1:
                             image = cv2.rotate(image, rot_degrees[cum_rot_index - 1])
