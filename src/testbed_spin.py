@@ -556,7 +556,7 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            self.epochs = 60
+            self.epochs = 120
         else:
             self.epochs = 25
         self.temporal_width = 64
@@ -591,7 +591,7 @@ class Networks:
                                                          "KINETICS",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0113_no_spin"),
+                                                         "0113"),
                          "weights.ckpt-{}".format(10))
 
         self.save_ckpt_file_folder = \
