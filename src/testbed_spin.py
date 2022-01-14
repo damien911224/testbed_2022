@@ -1851,7 +1851,12 @@ class Networks:
                         cum_rot_degree += rot_degrees[rot_index]
                         image = image.rotate(cum_rot_degree)
 
-                        image = image.crop((112 // 2, 112 // 2, 112 // 2 + 112, 112 // 2 + 112))
+                        image = image.crop((self.dataset.networks.input_size[1] // 2,
+                                            self.dataset.networks.input_size[0] // 2,
+                                            self.dataset.networks.input_size[1] // 2 +
+                                            self.dataset.networks.input_size[1],
+                                            self.dataset.networks.input_size[0] // 2 +
+                                            self.dataset.networks.input_size[0]))
 
                         image = rand_aug(image)
                         image = np.asarray(image)
