@@ -157,7 +157,7 @@ class Networks:
             image_summary_size = 10 * 3
             self.image_summary_ph = \
                 tf.placeholder(dtype=tf.uint8,
-                               shape=(image_summary_size, 224, 224 * 16 + 10 * 15, 3))
+                               shape=(image_summary_size, self.input_size[0], self.input_size[1], * 16 + 10 * 15, 3))
             self.image_summary = \
                 tf.summary.image("input_images",
                                  self.image_summary_ph,
@@ -165,7 +165,7 @@ class Networks:
 
             self.cam_summary_ph = \
                 tf.placeholder(dtype=tf.uint8,
-                               shape=(image_summary_size, 448, 224 * 16 + 10 * 15, 3))
+                               shape=(image_summary_size, self.input_size[0] * 2, self.input_size[1] * 16 + 10 * 15, 3))
             self.cam_summary = \
                 tf.summary.image("cam_images",
                                  self.cam_summary_ph,
@@ -453,7 +453,7 @@ class Networks:
                             jet = cm.get_cmap("jet")
                             # Use RGB values of the colormap
                             jet_colors = jet(np.arange(256))[:, :3] * 255.0
-                            buffer = np.zeros(dtype=np.uint8, shape=(224, 10, 3))
+                            buffer = np.zeros(dtype=np.uint8, shape=(self.input_size[1], 10, 3))
                             sampled_indices = random.sample(range(len(frame_vectors)), 3)
                             for n_i in sampled_indices:
                                 sampled_t = random.choice(range(self.temporal_width - 16 + 1))
