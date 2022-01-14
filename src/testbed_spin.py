@@ -39,7 +39,7 @@ class Networks:
             # self.epochs = 120
         elif self.dataset_name == "kinetics":
             self.epochs = 10
-        self.temporal_width = 64
+        self.temporal_width = 16
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
@@ -109,9 +109,9 @@ class Networks:
                                                     momentum=0.9)
 
         self.model = self.Model(self, is_training=True, phase="pretraining",
-                                data_type=self.data_type, num_classes=4 * 2)
+                                data_type=self.data_type, num_classes=4 + 7)
         self.model_validation = self.Model(self, is_training=False, phase="pretraining",
-                                           data_type=self.data_type, num_classes=4 * 2)
+                                           data_type=self.data_type, num_classes=4 + 7)
         self.model.build_model()
         self.model_validation.build_model()
 
@@ -196,7 +196,8 @@ class Networks:
 
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
         speed_labels = ["Slow", "Normal", "Fast", "Faster"]
-        rotation_labels = ["0", "90", "180", "270"]
+        # rotation_labels = ["0", "90", "180", "270"]
+        rotation_labels = ["-8", "-4", "0", "2", "4", "8"]
 
         with tf.Session() as session:
             session.run(self.train_iterator.initializer)
@@ -1814,7 +1815,7 @@ class Networks:
 
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_degrees = [2, 4, 6, 8]
+                rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
                 cum_rot_degree = int(np.random.uniform(low=0, high=360))
@@ -2031,7 +2032,7 @@ class Networks:
 
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_degrees = [2, 4, 6, 8]
+                rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
                 cum_rot_degree = int(np.random.uniform(low=0, high=360))
@@ -3111,7 +3112,6 @@ class Networks:
 
                             end_point = "Logits"
                             with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-                                encoder_net = tf.identity(net)
                                 N, T, H, W, C = net.get_shape().as_list()
                                 with tf.variable_scope("AvgPool_0a_2xHxW", reuse=tf.AUTO_REUSE):
                                     net = tf.nn.avg_pool3d(net,
