@@ -1804,10 +1804,10 @@ class Networks:
                 height, width, _ = one_frame.shape
 
                 # total_crop_height = height - self.dataset.networks.input_size[1]
-                total_crop_height = height - round(self.dataset.networks.input_size[1] / (np.sqrt(2) / 2))
+                total_crop_height = height - 224
                 crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                 # total_crop_width = width - self.dataset.networks.input_size[0]
-                total_crop_width = width - round(self.dataset.networks.input_size[0] / (np.sqrt(2) / 2))
+                total_crop_width = width - 224
                 crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
                 is_flip = np.random.choice([True, False], 1)
@@ -1839,21 +1839,19 @@ class Networks:
                         #     image = cv2.flip(image, 1)
                         split = 0
                         image = Image.open(image_path)
+                        # image = image.crop((crop_left, crop_top,
+                        #                     crop_left + self.dataset.networks.input_size[1],
+                        #                     crop_top + self.dataset.networks.input_size[0]))
                         image = image.crop((crop_left, crop_top,
-                                            crop_left + round(self.dataset.networks.input_size[1] / (np.sqrt(2) / 2)),
-                                            crop_top + round(self.dataset.networks.input_size[1] / (np.sqrt(2) / 2))))
+                                            crop_left + 224,
+                                            crop_top + 224))
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
                         cum_rot_degree += rot_degrees[rot_index]
                         image = image.rotate(cum_rot_degree)
 
-                        image = image.crop((self.dataset.networks.input_size[1] // 2,
-                                            self.dataset.networks.input_size[0] // 2,
-                                            self.dataset.networks.input_size[1] // 2 +
-                                            self.dataset.networks.input_size[1],
-                                            self.dataset.networks.input_size[0] // 2 +
-                                            self.dataset.networks.input_size[0]))
+                        image = image.crop((112 // 2, 112 // 2, 112 // 2 + 112, 112 // 2 + 112))
 
                         image = rand_aug(image)
                         image = np.asarray(image)
@@ -2018,10 +2016,10 @@ class Networks:
                 height, width, _ = one_frame.shape
 
                 # total_crop_height = height - self.dataset.networks.input_size[1]
-                total_crop_height = height - round(self.dataset.networks.input_size[1] / (np.sqrt(2) / 2))
+                total_crop_height = height - 224
                 crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                 # total_crop_width = width - self.dataset.networks.input_size[0]
-                total_crop_width = width - round(self.dataset.networks.input_size[0] / (np.sqrt(2) / 2))
+                total_crop_width = width - 224
                 crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
                 is_flip = np.random.choice([True, False], 1)
@@ -2053,21 +2051,19 @@ class Networks:
                         #     image = cv2.flip(image, 1)
                         split = 0
                         image = Image.open(image_path)
+                        # image = image.crop((crop_left, crop_top,
+                        #                     crop_left + self.dataset.networks.input_size[1],
+                        #                     crop_top + self.dataset.networks.input_size[0]))
                         image = image.crop((crop_left, crop_top,
-                                            crop_left + round(self.dataset.networks.input_size[1] / (np.sqrt(2) / 2)),
-                                            crop_top + round(self.dataset.networks.input_size[1] / (np.sqrt(2) / 2))))
+                                            crop_left + 224,
+                                            crop_top + 224))
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
                         cum_rot_degree += rot_degrees[rot_index]
                         image = image.rotate(cum_rot_degree)
 
-                        image = image.crop((self.dataset.networks.input_size[1] // 2,
-                                            self.dataset.networks.input_size[0] // 2,
-                                            self.dataset.networks.input_size[1] // 2 +
-                                            self.dataset.networks.input_size[1],
-                                            self.dataset.networks.input_size[0] // 2 +
-                                            self.dataset.networks.input_size[0]))
+                        image = image.crop((112 // 2, 112 // 2, 112 // 2 + 112, 112 // 2 + 112))
 
                         image = rand_aug(image)
                         image = np.asarray(image)
