@@ -157,7 +157,7 @@ class Networks:
             image_summary_size = 10 * 3
             self.image_summary_ph = \
                 tf.placeholder(dtype=tf.uint8,
-                               shape=(image_summary_size, self.input_size[0], self.input_size[1], * 16 + 10 * 15, 3))
+                               shape=(image_summary_size, self.input_size[0], self.input_size[1] * 16 + 10 * 15, 3))
             self.image_summary = \
                 tf.summary.image("input_images",
                                  self.image_summary_ph,
