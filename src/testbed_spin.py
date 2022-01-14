@@ -3209,11 +3209,11 @@ class Networks:
                                 rotation_p = tf.stop_gradient(rotation_p)
                                 rotation_cams = tf.gradients(tf.reduce_sum(rotation_p * rotation_logits), inputs)[0]
 
-                                speed_cams = tf.maximum(tf.reduce_sum(speed_cams, axis=-1), 0.0)
+                                speed_cams = tf.reduce_sum(speed_cams, axis=-1)
                                 speed_cams -= tf.reduce_min(speed_cams)
                                 speed_cams /= tf.reduce_max(speed_cams) + 1.0e-7
                                 self.speed_cams.append(speed_cams)
-                                rotation_cams = tf.maximum(tf.reduce_sum(rotation_cams, axis=-1), 0.0)
+                                rotation_cams = tf.reduce_sum(rotation_cams, axis=-1)
                                 rotation_cams -= tf.reduce_min(rotation_cams)
                                 rotation_cams /= tf.reduce_max(rotation_cams) + 1.0e-7
                                 self.rotation_cams.append(rotation_cams)
