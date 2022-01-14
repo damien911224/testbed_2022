@@ -18,7 +18,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (128, 128, 3)
+        self.input_size = (112, 112, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -197,7 +197,7 @@ class Networks:
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
         speed_labels = ["Slow", "Normal", "Fast", "Faster"]
         # rotation_labels = ["0", "90", "180", "270"]
-        rotation_labels = ["-8", "-4", "0", "2", "4", "8"]
+        rotation_labels = ["-8", "-4", "-2", "0", "2", "4", "8"]
 
         with tf.Session() as session:
             session.run(self.train_iterator.initializer)
