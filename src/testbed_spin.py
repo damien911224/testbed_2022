@@ -3202,12 +3202,14 @@ class Networks:
                                 loss = self.speed_gamma * speed_loss + self.rotation_gamma * rotation_loss
                                 self.loss += loss
 
-                                speed_p = tf.one_hot(tf.argmax(speed_logits, axis=-1), depth=4, axis=-1)
-                                speed_p = tf.stop_gradient(speed_p)
-                                speed_cams = tf.gradients(tf.reduce_sum(speed_p * speed_logits), inputs)[0]
-                                rotation_p = tf.one_hot(tf.argmax(rotation_logits, axis=-1), depth=4, axis=-1)
-                                rotation_p = tf.stop_gradient(rotation_p)
-                                rotation_cams = tf.gradients(tf.reduce_sum(rotation_p * rotation_logits), inputs)[0]
+                                # speed_p = tf.one_hot(tf.argmax(speed_logits, axis=-1), depth=4, axis=-1)
+                                # speed_p = tf.stop_gradient(speed_p)
+                                # speed_cams = tf.gradients(tf.reduce_sum(speed_p * speed_logits), inputs)[0]
+                                speed_cams = tf.maximum(tf.gradients(tf.reduce_sum(speed_logits), inputs)[0], 0.0)
+                                # rotation_p = tf.one_hot(tf.argmax(rotation_logits, axis=-1), depth=4, axis=-1)
+                                # rotation_p = tf.stop_gradient(rotation_p)
+                                # rotation_cams = tf.gradients(tf.reduce_sum(rotation_p * rotation_logits), inputs)[0]
+                                rotation_cams = tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits), inputs)[0], 0.0)
 
                                 speed_cams = tf.reduce_sum(speed_cams, axis=-1)
                                 speed_cams -= tf.reduce_min(speed_cams)
