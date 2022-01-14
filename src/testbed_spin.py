@@ -18,7 +18,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (224, 224, 3)
+        self.input_size = (160, 160, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -30,13 +30,13 @@ class Networks:
         self.num_gpus = 2 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "ucf101"
+        self.dataset_name = "kinetics"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            # self.epochs = 60
-            self.epochs = 120
+            self.epochs = 60
+            # self.epochs = 120
         elif self.dataset_name == "kinetics":
             self.epochs = 10
         self.temporal_width = 16
@@ -452,7 +452,7 @@ class Networks:
                             # Use jet colormap to colorize heatmap
                             jet = cm.get_cmap("jet")
                             # Use RGB values of the colormap
-                            jet_colors = jet(np.arange(256))[:, :3]
+                            jet_colors = jet(np.arange(256))[:, :3] * 255.0
                             buffer = np.zeros(dtype=np.uint8, shape=(224, 10, 3))
                             sampled_indices = random.sample(range(len(frame_vectors)), 3)
                             for n_i in sampled_indices:
@@ -556,9 +556,9 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            self.epochs = 60
+            self.epochs = 100
         else:
-            self.epochs = 25
+            self.epochs = 100
         self.temporal_width = 64
         self.display_term = 1
         self.dtype = tf.float32
@@ -1784,8 +1784,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                # speed_steps = [1.0]
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -1803,43 +1803,57 @@ class Networks:
 
                 height, width, _ = one_frame.shape
 
-                total_crop_height = (height - self.dataset.networks.input_size[1])
-                # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                total_crop_width = (width - self.dataset.networks.input_size[0])
-                # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                # total_crop_height = height - self.dataset.networks.input_size[1]
+                total_crop_height = height - round(self.dataset.networks.input_size[1] / (np.sqrt(2) / 2))
+                crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                # total_crop_width = width - self.dataset.networks.input_size[0]
+                total_crop_width = width - round(self.dataset.networks.input_size[0] / (np.sqrt(2) / 2))
+                crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
                 is_flip = np.random.choice([True, False], 1)
 
                 frames = list()
-                rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
+                # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
+                rot_degrees = [2, 4, 6, 8]
                 rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_index = random.choice(range(len(rot_degrees)))
+                # cum_rot_index = random.choice(range(len(rot_degrees)))
+                cum_rot_degree = int(np.random.uniform(low=0, high=360))
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
 
                 rand_aug = RandAugment(n=2, m=5)
                 for frame_index in target_frames:
-                    crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                    crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                    # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                    # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     rand_aug.n = random.choice(range(2))
                     rand_aug.m = random.choice(range(5))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
-
+                        split = 0
                         # image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
                         # image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
                         #         crop_left:crop_left + self.dataset.networks.input_size[0], :]
                         # if is_flip:
                         #     image = cv2.flip(image, 1)
-
+                        split = 0
                         image = Image.open(image_path)
                         image = image.crop((crop_left, crop_top,
-                                            crop_left + self.dataset.networks.input_size[0],
-                                            crop_top + self.dataset.networks.input_size[1]))
+                                            crop_left + round(self.dataset.networks.input_size[1] / (np.sqrt(2) / 2)),
+                                            crop_top + round(self.dataset.networks.input_size[1] / (np.sqrt(2) / 2))))
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
+
+                        cum_rot_degree += rot_degrees[rot_index]
+                        image = image.rotate(cum_rot_degree)
+
+                        image = image.crop((self.dataset.networks.input_size[1] // 2,
+                                            self.dataset.networks.input_size[0] // 2,
+                                            self.dataset.networks.input_size[1] // 2 +
+                                            self.dataset.networks.input_size[1],
+                                            self.dataset.networks.input_size[0] // 2 +
+                                            self.dataset.networks.input_size[0]))
 
                         image = rand_aug(image)
                         image = np.asarray(image)
@@ -1848,44 +1862,12 @@ class Networks:
                         image = np.divide(image, 255.0)
                         image = np.multiply(np.subtract(image, 0.5), 2.0)
 
-                        cum_rot_index += rot_index
-                        cum_rot_index %= 4
-                        if cum_rot_index >= 1:
-                            image = cv2.rotate(image, rot_degrees[cum_rot_index - 1])
+                        # cum_rot_index += rot_index
+                        # cum_rot_index %= 4
+                        # if cum_rot_index >= 1:
+                        #     image = cv2.rotate(image, rot_degrees[cum_rot_index - 1])
 
                         frames.append(image)
-                    elif self.dataset.networks.data_type == "flows":
-                        if frame_index < 1 or frame_index > frame_length:
-                            flow = np.zeros(dtype=np.float32,
-                                            shape=(self.dataset.networks.input_size[1],
-                                                   self.dataset.networks.input_size[0],
-                                                   2))
-                        else:
-                            flow_x_path = os.path.join(self.dataset.frames_folder, identity,
-                                                       "{}_x_{:05d}.jpg".format(self.dataset.prefix, frame_index))
-                            flow_x = cv2.imread(flow_x_path, cv2.IMREAD_GRAYSCALE)
-
-                            flow_y_path = os.path.join(self.dataset.frames_folder, identity,
-                                                       "{}_y_{:05d}.jpg".format(self.dataset.prefix, frame_index))
-                            flow_y = cv2.imread(flow_y_path, cv2.IMREAD_GRAYSCALE)
-
-                            flow = np.stack([flow_x, flow_y], axis=-1)
-
-                            flow = flow[crop_top:crop_top + self.dataset.networks.input_size[1],
-                                   crop_left:crop_left + self.dataset.networks.input_size[0], :]
-                            if is_flip:
-                                flow = cv2.flip(flow, 1)
-
-                            flow = flow.astype(np.float32)
-                            flow = np.divide(flow, 255.0)
-                            flow = np.multiply(np.subtract(flow, 0.5), 2.0)
-
-                        cum_rot_index += rot_index
-                        cum_rot_index %= 4
-                        if cum_rot_index >= 1:
-                            flow = cv2.rotate(flow, rot_degrees[cum_rot_index - 1])
-
-                        frames.append(flow)
 
                 if self.dataset.networks.dformat == "NCDHW":
                     frames = np.transpose(frames, [3, 0, 1, 2])
@@ -2016,8 +1998,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                # speed_steps = [1.0]
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -2035,42 +2017,57 @@ class Networks:
 
                 height, width, _ = one_frame.shape
 
-                total_crop_height = (height - self.dataset.networks.input_size[1])
-                # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                total_crop_width = (width - self.dataset.networks.input_size[0])
-                # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                # total_crop_height = height - self.dataset.networks.input_size[1]
+                total_crop_height = height - round(self.dataset.networks.input_size[1] / (np.sqrt(2) / 2))
+                crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                # total_crop_width = width - self.dataset.networks.input_size[0]
+                total_crop_width = width - round(self.dataset.networks.input_size[0] / (np.sqrt(2) / 2))
+                crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
                 is_flip = np.random.choice([True, False], 1)
 
                 frames = list()
-                rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
+                # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
+                rot_degrees = [2, 4, 6, 8]
                 rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_index = random.choice(range(len(rot_degrees)))
+                # cum_rot_index = random.choice(range(len(rot_degrees)))
+                cum_rot_degree = int(np.random.uniform(low=0, high=360))
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
+
                 rand_aug = RandAugment(n=2, m=5)
-                for sampled_frame in target_frames:
-                    crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                    crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                for frame_index in target_frames:
+                    # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                    # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     rand_aug.n = random.choice(range(2))
                     rand_aug.m = random.choice(range(5))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
-                                                  "{}_{:05d}.jpg".format(self.dataset.prefix, sampled_frame))
-
+                                                  "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
+                        split = 0
                         # image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
                         # image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
                         #         crop_left:crop_left + self.dataset.networks.input_size[0], :]
                         # if is_flip:
                         #     image = cv2.flip(image, 1)
-
+                        split = 0
                         image = Image.open(image_path)
                         image = image.crop((crop_left, crop_top,
-                                            crop_left + self.dataset.networks.input_size[0],
-                                            crop_top + self.dataset.networks.input_size[1]))
+                                            crop_left + round(self.dataset.networks.input_size[1] / (np.sqrt(2) / 2)),
+                                            crop_top + round(self.dataset.networks.input_size[1] / (np.sqrt(2) / 2))))
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
+
+                        cum_rot_degree += rot_degrees[rot_index]
+                        image = image.rotate(cum_rot_degree)
+
+                        image = image.crop((self.dataset.networks.input_size[1] // 2,
+                                            self.dataset.networks.input_size[0] // 2,
+                                            self.dataset.networks.input_size[1] // 2 +
+                                            self.dataset.networks.input_size[1],
+                                            self.dataset.networks.input_size[0] // 2 +
+                                            self.dataset.networks.input_size[0]))
 
                         image = rand_aug(image)
                         image = np.asarray(image)
@@ -2079,54 +2076,12 @@ class Networks:
                         image = np.divide(image, 255.0)
                         image = np.multiply(np.subtract(image, 0.5), 2.0)
 
-                        cum_rot_index += rot_index
-                        cum_rot_index %= 4
-                        if cum_rot_index >= 1:
-                            image = cv2.rotate(image, rot_degrees[cum_rot_index - 1])
+                        # cum_rot_index += rot_index
+                        # cum_rot_index %= 4
+                        # if cum_rot_index >= 1:
+                        #     image = cv2.rotate(image, rot_degrees[cum_rot_index - 1])
 
                         frames.append(image)
-                    elif self.dataset.networks.data_type == "flows":
-                        if sampled_frame < 1 or sampled_frame > frame_length:
-                            flow = np.zeros(dtype=np.float32,
-                                            shape=(self.dataset.networks.input_size[1],
-                                                   self.dataset.networks.input_size[0],
-                                                   2))
-                        else:
-                            flow_x_path = os.path.join(self.dataset.frames_folder, identity,
-                                                       "{}_x_{:05d}.jpg".format(self.dataset.prefix, sampled_frame))
-                            flow_x = cv2.imread(flow_x_path, cv2.IMREAD_GRAYSCALE)
-
-                            flow_y_path = os.path.join(self.dataset.frames_folder, identity,
-                                                       "{}_y_{:05d}.jpg".format(self.dataset.prefix,
-                                                                                sampled_frame))
-                            flow_y = cv2.imread(flow_y_path, cv2.IMREAD_GRAYSCALE)
-
-                            if flow_x is None or flow_y is None:
-                                # print("No Flow {} {:05d}".format(identity, sampled_frame))
-
-                                flow = np.zeros(dtype=np.float32,
-                                                shape=(self.dataset.networks.input_size[1],
-                                                       self.dataset.networks.input_size[0],
-                                                       2))
-                            else:
-                                flow = np.stack([flow_x, flow_y], axis=-1)
-
-                                total_crop_height = (height - self.dataset.networks.input_size[1])
-                                crop_top = total_crop_height // 2
-                                total_crop_width = (width - self.dataset.networks.input_size[0])
-                                crop_left = total_crop_width // 2
-                                flow = flow[crop_top:crop_top + self.dataset.networks.input_size[1],
-                                       crop_left:crop_left + self.dataset.networks.input_size[0], :]
-                                flow = flow.astype(np.float32)
-                                flow = np.divide(flow, 255.0)
-                                flow = np.multiply(np.subtract(flow, 0.5), 2.0)
-
-                        cum_rot_index += rot_index
-                        cum_rot_index %= 4
-                        if cum_rot_index >= 1:
-                            flow = cv2.rotate(flow, rot_degrees[cum_rot_index - 1])
-
-                        frames.append(flow)
 
                 if self.dataset.networks.dformat == "NCDHW":
                     frames = np.transpose(frames, [3, 0, 1, 2])
@@ -3038,8 +2993,8 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 1.0
-            self.rotation_gamma = 0.1
+            self.speed_gamma = 0.0
+            self.rotation_gamma = 1.0
 
             if batch_size is None:
                 self.batch_size = \
@@ -4037,4 +3992,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.finetune(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)
