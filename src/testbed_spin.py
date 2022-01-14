@@ -3212,12 +3212,16 @@ class Networks:
                                 rotation_cams = tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits), inputs)[0], 0.0)
 
                                 speed_cams = tf.reduce_sum(speed_cams, axis=-1)
-                                speed_cams -= tf.reduce_min(speed_cams)
-                                speed_cams /= tf.reduce_max(speed_cams) + 1.0e-7
+                                # speed_cams -= tf.reduce_min(speed_cams)
+                                speed_cams -= tf.reduce_min(speed_cams, axis=(2, 3), keepdims=True)
+                                # speed_cams /= tf.reduce_max(speed_cams) + 1.0e-7
+                                speed_cams /= tf.reduce_max(speed_cams, axis=(2, 3), keepdims=True) + 1.0e-7
                                 self.speed_cams.append(speed_cams)
                                 rotation_cams = tf.reduce_sum(rotation_cams, axis=-1)
-                                rotation_cams -= tf.reduce_min(rotation_cams)
-                                rotation_cams /= tf.reduce_max(rotation_cams) + 1.0e-7
+                                # rotation_cams -= tf.reduce_min(rotation_cams)
+                                rotation_cams -= tf.reduce_min(rotation_cams, axis=(2, 3), keepdims=True)
+                                # rotation_cams /= tf.reduce_max(rotation_cams) + 1.0e-7
+                                rotation_cams /= tf.reduce_max(rotation_cams, axis=(2, 3), keepdims=True) + 1.0e-7
                                 self.rotation_cams.append(rotation_cams)
                             else:
                                 self.predictions.append(tf.nn.softmax(net, axis=-1))
