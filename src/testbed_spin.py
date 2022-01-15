@@ -18,7 +18,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (112, 112, 3)
+        self.input_size = (224, 224, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -560,7 +560,7 @@ class Networks:
             self.epochs = 100
         else:
             self.epochs = 100
-        self.temporal_width = 16
+        self.temporal_width = 64
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
