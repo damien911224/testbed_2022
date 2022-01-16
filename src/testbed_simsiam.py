@@ -1979,7 +1979,7 @@ class Networks:
 
                 rand_d_01 = random.choice([1.0, -1.0])
                 rand_m_01 = random.choice(range(30))
-                rand_s_02 = random.choice(range(10, 11))
+                rand_s_01 = random.choice(range(10, 11))
                 # rand_s_01 = 0
                 rand_aug_01 = RandAugmentFixed(n=2)
 
