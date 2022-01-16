@@ -3196,14 +3196,7 @@ class Networks:
 
             with tf.device("/cpu:0"):
                 self.loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
-                if self.phase == "pretraining":
-                    self.speed_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
-                    self.rotation_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
-                    self.speed_accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
-                    self.rotation_accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
-                    self.speed_predictions = tf.concat(self.speed_predictions, axis=0)
-                    self.rotation_predictions = tf.concat(self.rotation_predictions, axis=0)
-                else:
+                if self.phase == "finetuning":
                     self.accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.predictions = tf.concat(self.predictions, axis=0)
 
