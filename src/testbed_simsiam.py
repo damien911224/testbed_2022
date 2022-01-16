@@ -27,8 +27,7 @@ class Networks:
         self.is_server = True
         self.batch_size = 8 if self.is_server else 2
         self.num_gpus = 2 if self.is_server else 1
-        # self.num_workers = self.num_gpus * 24
-        self.num_workers = 1
+        self.num_workers = self.num_gpus * 24
         self.data_type = "images"
         self.dataset_name = "ucf101"
         self.dataset_split = "split01"
@@ -200,108 +199,6 @@ class Networks:
                 epoch_time = 0.0
                 epoch_preprocessing_time = 0.0
                 epoch_training_time = 0.0
-
-                if (epoch) % self.validation_term == 0 or epoch == 1:
-                    print("Validation on Epochs {:05d}".format(epoch))
-
-                    validation_loss = 0.0
-                    input_images = list()
-
-                    loop_rounds = max(int(math.ceil(float(self.validation_size) /
-                                                    float(self.validation_batch_size * self.num_gpus))),
-                                      1)
-
-                    for validation_batch_index in range(loop_rounds):
-                        try:
-                            frame_vectors = session.run(self.validation_next_element)
-                        except tf.errors.OutOfRangeError:
-                            break
-
-                        loss = \
-                            session.run(
-                                self.model_validation.loss,
-                                feed_dict={self.model_validation.frames: frame_vectors})
-
-                        validation_loss += loss
-
-                        if validation_batch_index < 10:
-                            sampled_indices = random.sample(range(len(frame_vectors)), 3)
-                            for n_i in sampled_indices:
-                                sampled_t = random.choice(range(self.temporal_width - 16 + 1))
-                                t_image = np.array(((frame_vectors[n_i] + 1.0) / 2.0) * 255.0, dtype=np.uint8)
-                                t_image = np.concatenate(np.split(t_image, 2, axis=-1), axis=1)
-                                buffer = np.zeros(dtype=np.uint8, shape=(self.input_size[1] * 2, 10, 3))
-                                images = list()
-                                for t_i in range(sampled_t, sampled_t + 16):
-                                    images.append(t_image[t_i])
-                                    if t_i < sampled_t + 16 - 1:
-                                        images.append(buffer)
-                                image = np.concatenate(images, axis=1)
-                                input_images.append(image)
-
-                        if validation_batch_index >= 10:
-                            break
-
-                        print_string = \
-                            "|{:10s}|Epoch {:3d}/{:3d}|Batch {:3d}/{:3d}|Loss: {:.2f}".format(
-                                "Validation",
-                                epoch,
-                                self.epochs,
-                                validation_batch_index + 1,
-                                loop_rounds,
-                                loss)
-                        progress_step = validation_batch_index + 1
-                        progress_length = loop_rounds
-                        print_string += \
-                            " |{}{}|".format(
-                                "=" * int(round(37.0 * float(progress_step) / float(progress_length))),
-                                " " * (37 - int(round(37.0 * float(progress_step) / float(progress_length)))))
-                        sys.stdout.write("\r" + print_string)
-                        sys.stdout.flush()
-
-                    validation_loss /= float(loop_rounds)
-
-                    validation_summary = \
-                        session.run(self.validation_summaries,
-                                    feed_dict={self.loss_summary_ph: validation_loss,
-                                               self.image_summary_ph: input_images})
-                    self.validation_summary_writer.add_summary(validation_summary, epoch)
-
-                    validation_quality = -0.5 * validation_loss
-
-                    if epoch % self.ckpt_save_term == 0:
-                        # if self.previous_best_epoch and self.previous_best_epoch != epoch - self.ckpt_save_term:
-                        #     weight_files = glob.glob(os.path.join(self.save_ckpt_file_folder,
-                        #                                           "weights.ckpt-{}.*".format(
-                        #                                               epoch - self.ckpt_save_term)))
-                        #     for file in weight_files:
-                        #         try:
-                        #             os.remove(file)
-                        #         except OSError:
-                        #             pass
-
-                        saver.save(session, os.path.join(self.save_ckpt_file_folder, "weights.ckpt"),
-                                   global_step=epoch)
-
-                    if validation_quality >= self.best_validation:
-                        self.best_validation = validation_quality
-                        if self.previous_best_epoch and self.previous_best_epoch % self.ckpt_save_term != 0:
-                            weight_files = glob.glob(os.path.join(self.save_ckpt_file_folder,
-                                                                  "weights.ckpt-{}.*".format(self.previous_best_epoch)))
-                            for file in weight_files:
-                                try:
-                                    os.remove(file)
-                                except OSError:
-                                    pass
-
-                        if epoch % self.ckpt_save_term != 0:
-                            saver.save(session, os.path.join(self.save_ckpt_file_folder, "weights.ckpt"),
-                                       global_step=epoch)
-                        self.previous_best_epoch = epoch
-
-                    print("Validation Results ...")
-                    print("Validation Loss {:.5f}".format(validation_loss))
-                    print("=" * 90)
 
                 batch_length = int(
                     math.floor(float(self.train_data.data_count) / float(self.batch_size * self.num_gpus)))
@@ -1751,7 +1648,7 @@ class Networks:
 
                 rand_d_01 = random.choice([1.0, -1.0])
                 rand_m_01 = random.choice(range(30))
-                rand_s_01 = random.choice(range(2, 11))
+                rand_s_01 = random.choice(range(2, 6))
                 # rand_s_01 = 0
                 rand_aug_01 = RandAugmentFixed(n=2)
 
@@ -1766,7 +1663,7 @@ class Networks:
 
                 rand_d_02 = random.choice([1.0, -1.0])
                 rand_m_02 = random.choice(range(30))
-                rand_s_02 = random.choice(range(2, 11))
+                rand_s_02 = random.choice(range(2, 6))
                 # rand_s_02 = 0
                 rand_aug_02 = RandAugmentFixed(n=2)
 
@@ -1778,12 +1675,12 @@ class Networks:
                     if crop_l_01 + crop_l_m_01 * crop_l_d_01 < 0 or \
                             crop_l_01 + crop_l_m_01 * crop_l_d_01 > total_crop_height:
                         crop_l_d_01 *= -1.0
-                    crop_top_01 = int(crop_t_01 + crop_t_m_01 * crop_t_d_01)
-                    crop_left_01 = int(crop_l_01 + crop_l_m_01 * crop_l_d_01)
+                    crop_t_01 = int(crop_t_01 + crop_t_m_01 * crop_t_d_01)
+                    crop_l_01 = int(crop_l_01 + crop_l_m_01 * crop_l_d_01)
 
                     if rand_m_01 + rand_s_01 * rand_d_01 < 1 or rand_m_01 + rand_s_01 * rand_d_01 > 30:
                         rand_d_01 *= -1.0
-                    rand_mag_01 = rand_m_01 + rand_s_01 * rand_d_01
+                    rand_m_01 = rand_m_01 + rand_s_01 * rand_d_01
 
                     if crop_t_02 + crop_t_m_02 * crop_t_d_02 < 0 or \
                             crop_t_02 + crop_t_m_02 * crop_t_d_02 > total_crop_height:
@@ -1791,12 +1688,12 @@ class Networks:
                     if crop_l_02 + crop_l_m_02 * crop_l_d_02 < 0 or \
                             crop_l_02 + crop_l_m_02 * crop_l_d_02 > total_crop_height:
                         crop_l_d_02 *= -1.0
-                    crop_top_02 = int(crop_t_02 + crop_t_m_02 * crop_t_d_02)
-                    crop_left_02 = int(crop_l_02 + crop_l_m_02 * crop_l_d_02)
+                    crop_t_02 = int(crop_t_02 + crop_t_m_02 * crop_t_d_02)
+                    crop_l_02 = int(crop_l_02 + crop_l_m_02 * crop_l_d_02)
 
                     if rand_m_02 + rand_s_02 * rand_d_02 < 1 or rand_m_02 + rand_s_02 * rand_d_02 > 30:
                         rand_d_02 *= -1.0
-                    rand_mag_02 = rand_m_02 + rand_s_02 * rand_d_02
+                    rand_m_02 = rand_m_02 + rand_s_02 * rand_d_02
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
@@ -1812,16 +1709,16 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        image_01 = image.crop((crop_left_01, crop_top_01,
-                                               crop_left_01 + self.dataset.networks.input_size[0],
-                                               crop_top_01 + self.dataset.networks.input_size[1]))
-                        image_01 = rand_aug_01(image_01, rand_mag_01)
+                        image_01 = image.crop((crop_l_01, crop_t_01,
+                                               crop_l_01 + self.dataset.networks.input_size[0],
+                                               crop_t_01 + self.dataset.networks.input_size[1]))
+                        image_01 = rand_aug_01(image_01, rand_m_01)
                         image_01 = np.asarray(image_01)
 
-                        image_02 = image.crop((crop_left_02, crop_top_02,
-                                               crop_left_02 + self.dataset.networks.input_size[0],
-                                               crop_top_02 + self.dataset.networks.input_size[1]))
-                        image_02 = rand_aug_02(image_02, rand_mag_02)
+                        image_02 = image.crop((crop_l_02, crop_t_02,
+                                               crop_l_02 + self.dataset.networks.input_size[0],
+                                               crop_t_02 + self.dataset.networks.input_size[1]))
+                        image_02 = rand_aug_02(image_02, rand_m_02)
                         image_02 = np.asarray(image_02)
 
                         image = np.concatenate([image_01, image_02], axis=-1)
@@ -1980,7 +1877,7 @@ class Networks:
 
                 rand_d_01 = random.choice([1.0, -1.0])
                 rand_m_01 = random.choice(range(30))
-                rand_s_01 = random.choice(range(10, 11))
+                rand_s_01 = random.choice(range(2, 6))
                 # rand_s_01 = 0
                 rand_aug_01 = RandAugmentFixed(n=2)
 
@@ -1995,7 +1892,7 @@ class Networks:
 
                 rand_d_02 = random.choice([1.0, -1.0])
                 rand_m_02 = random.choice(range(30))
-                rand_s_02 = random.choice(range(10, 11))
+                rand_s_02 = random.choice(range(2, 6))
                 # rand_s_02 = 0
                 rand_aug_02 = RandAugmentFixed(n=2)
 
@@ -2007,12 +1904,12 @@ class Networks:
                     if crop_l_01 + crop_l_m_01 * crop_l_d_01 < 0 or \
                             crop_l_01 + crop_l_m_01 * crop_l_d_01 > total_crop_height:
                         crop_l_d_01 *= -1.0
-                    crop_top_01 = int(crop_t_01 + crop_t_m_01 * crop_t_d_01)
-                    crop_left_01 = int(crop_l_01 + crop_l_m_01 * crop_l_d_01)
+                    crop_t_01 = int(crop_t_01 + crop_t_m_01 * crop_t_d_01)
+                    crop_l_01 = int(crop_l_01 + crop_l_m_01 * crop_l_d_01)
 
                     if rand_m_01 + rand_s_01 * rand_d_01 < 1 or rand_m_01 + rand_s_01 * rand_d_01 > 30:
                         rand_d_01 *= -1.0
-                    rand_mag_01 = rand_m_01 + rand_s_01 * rand_d_01
+                    rand_m_01 = rand_m_01 + rand_s_01 * rand_d_01
 
                     if crop_t_02 + crop_t_m_02 * crop_t_d_02 < 0 or \
                             crop_t_02 + crop_t_m_02 * crop_t_d_02 > total_crop_height:
@@ -2020,14 +1917,12 @@ class Networks:
                     if crop_l_02 + crop_l_m_02 * crop_l_d_02 < 0 or \
                             crop_l_02 + crop_l_m_02 * crop_l_d_02 > total_crop_height:
                         crop_l_d_02 *= -1.0
-                    crop_top_02 = int(crop_t_02 + crop_t_m_02 * crop_t_d_02)
-                    crop_left_02 = int(crop_l_02 + crop_l_m_02 * crop_l_d_02)
+                    crop_t_02 = int(crop_t_02 + crop_t_m_02 * crop_t_d_02)
+                    crop_l_02 = int(crop_l_02 + crop_l_m_02 * crop_l_d_02)
 
                     if rand_m_02 + rand_s_02 * rand_d_02 < 1 or rand_m_02 + rand_s_02 * rand_d_02 > 30:
                         rand_d_02 *= -1.0
-                    rand_mag_02 = rand_m_02 + rand_s_02 * rand_d_02
-
-                    print(rand_mag_02)
+                    rand_m_02 = rand_m_02 + rand_s_02 * rand_d_02
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
@@ -2043,16 +1938,16 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        image_01 = image.crop((crop_left_01, crop_top_01,
-                                               crop_left_01 + self.dataset.networks.input_size[0],
-                                               crop_top_01 + self.dataset.networks.input_size[1]))
-                        image_01 = rand_aug_01(image_01, rand_mag_01)
+                        image_01 = image.crop((crop_l_01, crop_t_01,
+                                               crop_l_01 + self.dataset.networks.input_size[0],
+                                               crop_t_01 + self.dataset.networks.input_size[1]))
+                        image_01 = rand_aug_01(image_01, rand_m_01)
                         image_01 = np.asarray(image_01)
 
-                        image_02 = image.crop((crop_left_02, crop_top_02,
-                                               crop_left_02 + self.dataset.networks.input_size[0],
-                                               crop_top_02 + self.dataset.networks.input_size[1]))
-                        image_02 = rand_aug_02(image_02, rand_mag_02)
+                        image_02 = image.crop((crop_l_02, crop_t_02,
+                                               crop_l_02 + self.dataset.networks.input_size[0],
+                                               crop_t_02 + self.dataset.networks.input_size[1]))
+                        image_02 = rand_aug_02(image_02, rand_m_02)
                         image_02 = np.asarray(image_02)
 
                         image = np.concatenate([image_01, image_02], axis=-1)
