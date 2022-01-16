@@ -1723,6 +1723,8 @@ class Networks:
 
                         frames.append(image)
 
+                frames = np.stack(frames, axis=0)
+
                 if self.dataset.networks.dformat == "NCDHW":
                     frames = np.transpose(frames, [3, 0, 1, 2])
 
@@ -1943,6 +1945,8 @@ class Networks:
                         image = np.multiply(np.subtract(image, 0.5), 2.0)
 
                         frames.append(image)
+
+                frames = np.stack(frames, axis=0)
 
                 if self.dataset.networks.dformat == "NCDHW":
                     frames = np.transpose(frames, [3, 0, 1, 2])
