@@ -3032,7 +3032,7 @@ class Networks:
                                         net = tf.add(conv, biases)
                                         net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
 
-                                    Z = tf.squeeze(Z, axis=(1, 2, 3))
+                                    Z = tf.squeeze(net, axis=(1, 2, 3))
 
                                 end_point = "P"
                                 net = tf.reduce_mean(encoder_net, axis=(1, 2, 3), keepdims=True)
@@ -3077,7 +3077,7 @@ class Networks:
                                                             data_format=self.networks.dformat)
                                         net = tf.add(conv, biases)
 
-                                    P = tf.squeeze(P, axis=(1, 2, 3))
+                                    P = tf.squeeze(net, axis=(1, 2, 3))
 
                                 Z = tf.stack(tf.split(Z, 2, axis=0), axis=-1)
                                 z_01 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 0]))
