@@ -1638,27 +1638,33 @@ class Networks:
                 is_flip = np.random.choice([True, False], 1)
 
                 crop_t_01 = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                crop_t_m_01 = random.choice(range(8, 33))
+                # crop_t_m_01 = random.choice(range(8, 33))
+                crop_t_m_01 = 0
                 crop_t_d_01 = random.choice([1.0, -1.0])
                 crop_l_01 = int(np.random.uniform(low=0, high=total_crop_width + 1))
-                crop_l_m_01 = random.choice(range(8, 33))
+                # crop_l_m_01 = random.choice(range(8, 33))
+                crop_l_m_01 = 0
                 crop_l_d_01 = random.choice([1.0, -1.0])
 
                 rand_d_01 = random.choice([1.0, -1.0])
                 rand_m_01 = random.choice(range(30))
-                rand_s_01 = random.choice(range(1, 5))
+                # rand_s_01 = random.choice(range(1, 5))
+                rand_s_01 = 0
                 rand_aug_01 = RandAugmentFixed(n=2)
 
                 crop_t_02 = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                crop_t_m_02 = random.choice(range(8, 33))
+                # crop_t_m_02 = random.choice(range(8, 33))
+                crop_t_m_02 = 0
                 crop_t_d_02 = random.choice([1.0, -1.0])
                 crop_l_02 = int(np.random.uniform(low=0, high=total_crop_width + 1))
-                crop_l_m_02 = random.choice(range(8, 33))
+                # crop_l_m_02 = random.choice(range(8, 33))
+                crop_l_m_02 = 0
                 crop_l_d_02 = random.choice([1.0, -1.0])
 
                 rand_d_02 = random.choice([1.0, -1.0])
                 rand_m_02 = random.choice(range(30))
-                rand_s_02 = random.choice(range(1, 5))
+                # rand_s_02 = random.choice(range(1, 5))
+                rand_s_02 = 0
                 rand_aug_02 = RandAugmentFixed(n=2)
 
                 frames = list()
@@ -1861,27 +1867,33 @@ class Networks:
                 is_flip = np.random.choice([True, False], 1)
 
                 crop_t_01 = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                crop_t_m_01 = random.choice(range(8, 33))
+                # crop_t_m_01 = random.choice(range(8, 33))
+                crop_t_m_01 = 0
                 crop_t_d_01 = random.choice([1.0, -1.0])
                 crop_l_01 = int(np.random.uniform(low=0, high=total_crop_width + 1))
-                crop_l_m_01 = random.choice(range(8, 33))
+                # crop_l_m_01 = random.choice(range(8, 33))
+                crop_l_m_01 = 0
                 crop_l_d_01 = random.choice([1.0, -1.0])
 
                 rand_d_01 = random.choice([1.0, -1.0])
                 rand_m_01 = random.choice(range(30))
-                rand_s_01 = random.choice(range(1, 5))
+                # rand_s_01 = random.choice(range(1, 5))
+                rand_s_01 = 0
                 rand_aug_01 = RandAugmentFixed(n=2)
 
                 crop_t_02 = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                crop_t_m_02 = random.choice(range(8, 33))
+                # crop_t_m_02 = random.choice(range(8, 33))
+                crop_t_m_02 = 0
                 crop_t_d_02 = random.choice([1.0, -1.0])
                 crop_l_02 = int(np.random.uniform(low=0, high=total_crop_width + 1))
-                crop_l_m_02 = random.choice(range(8, 33))
+                # crop_l_m_02 = random.choice(range(8, 33))
+                crop_l_m_02 = 0
                 crop_l_d_02 = random.choice([1.0, -1.0])
 
                 rand_d_02 = random.choice([1.0, -1.0])
                 rand_m_02 = random.choice(range(30))
-                rand_s_02 = random.choice(range(1, 5))
+                # rand_s_02 = random.choice(range(1, 5))
+                rand_s_02 = 0
                 rand_aug_02 = RandAugmentFixed(n=2)
 
                 frames = list()
