@@ -27,7 +27,8 @@ class Networks:
         self.is_server = True
         self.batch_size = 8 if self.is_server else 2
         self.num_gpus = 2 if self.is_server else 1
-        self.num_workers = self.num_gpus * 24
+        # self.num_workers = self.num_gpus * 24
+        self.num_workers = 1
         self.data_type = "images"
         self.dataset_name = "ucf101"
         self.dataset_split = "split01"
@@ -2025,6 +2026,8 @@ class Networks:
                     if rand_m_02 + rand_s_02 * rand_d_02 < 1 or rand_m_02 + rand_s_02 * rand_d_02 > 30:
                         rand_d_02 *= -1.0
                     rand_mag_02 = rand_m_02 + rand_s_02 * rand_d_02
+
+                    print(rand_mag_02)
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
