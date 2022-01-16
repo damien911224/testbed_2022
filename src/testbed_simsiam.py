@@ -247,12 +247,12 @@ class Networks:
                     batch_iteration += 1
 
                     epoch_time += time.time() - iteration_start_time
-                    print("Pre-processing Time: {:.5f}".format(epoch_preprocessing_time /
-                                                               epoch_batch_iteration))
-                    print("Training Time: {:.5f}".format(epoch_training_time /
-                                                         epoch_batch_iteration))
-                    print("One-Iteration Time: {:.5f}".format(epoch_time /
-                                                              epoch_batch_iteration))
+                    # print("Pre-processing Time: {:.5f}".format(epoch_preprocessing_time /
+                    #                                            epoch_batch_iteration))
+                    # print("Training Time: {:.5f}".format(epoch_training_time /
+                    #                                      epoch_batch_iteration))
+                    # print("One-Iteration Time: {:.5f}".format(epoch_time /
+                    #                                           epoch_batch_iteration))
 
                 epoch_loss /= float(epoch_batch_iteration)
                 epoch_learning_rate /= float(epoch_batch_iteration)
@@ -2953,20 +2953,22 @@ class Networks:
                                                       scope=self.i3d_name)
 
                             if self.phase == "pretraining":
-                                N, T, H, W, C = net.get_shape().as_list()
-                                with tf.variable_scope("AvgPool_0a_2xHxW", reuse=tf.AUTO_REUSE):
-                                    net = tf.nn.avg_pool3d(net,
-                                                           [1, 2, H, W, 1]
-                                                           if self.networks.dformat == "NDHWC"
-                                                           else [1, 1, 2, 7, 7],
-                                                           strides=[1, 1, 1, 1, 1],
-                                                           padding="VALID",
-                                                           data_format=self.networks.dformat)
-
-                                with tf.variable_scope("Dropout_0b", reuse=tf.AUTO_REUSE):
-                                    net = tf.layers.dropout(net, rate=self.dropout_prob, training=self.is_training)
+                                encoder_net = tf.identity(net)
+                                N, T, H, W, C = encoder_net.get_shape().as_list()
+                                # with tf.variable_scope("AvgPool_0a_2xHxW", reuse=tf.AUTO_REUSE):
+                                #     net = tf.nn.avg_pool3d(net,
+                                #                            [1, 2, H, W, 1]
+                                #                            if self.networks.dformat == "NDHWC"
+                                #                            else [1, 1, 2, 7, 7],
+                                #                            strides=[1, 1, 1, 1, 1],
+                                #                            padding="VALID",
+                                #                            data_format=self.networks.dformat)
+                                #
+                                # with tf.variable_scope("Dropout_0b", reuse=tf.AUTO_REUSE):
+                                #     net = tf.layers.dropout(net, rate=self.dropout_prob, training=self.is_training)
 
                                 end_point = "Z"
+                                net = tf.reduce_mean(encoder_net, axis=(1, 2, 3), keepdims=True)
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
                                     with tf.variable_scope("Conv3d_0a_1x1x1", reuse=tf.AUTO_REUSE):
                                         kernel = tf.get_variable(name="conv_3d/kernel",
@@ -3030,16 +3032,10 @@ class Networks:
                                         net = tf.add(conv, biases)
                                         net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
 
-                                    Z = tf.reduce_mean(net,
-                                                       axis=1 if self.networks.dformat == "NDHWC" else 2,
-                                                       keepdims=True)
-
-                                    Z = tf.squeeze(Z,
-                                                   axis=[1, 2, 3]
-                                                   if self.networks.dformat == "NDHWC"
-                                                   else [2, 3, 4])
+                                    Z = tf.squeeze(Z, axis=(1, 2, 3))
 
                                 end_point = "P"
+                                net = tf.reduce_mean(encoder_net, axis=(1, 2, 3), keepdims=True)
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
                                     with tf.variable_scope("Conv3d_0a_1x1x1", reuse=tf.AUTO_REUSE):
                                         kernel = tf.get_variable(name="conv_3d/kernel",
@@ -3081,14 +3077,7 @@ class Networks:
                                                             data_format=self.networks.dformat)
                                         net = tf.add(conv, biases)
 
-                                    P = tf.reduce_mean(net,
-                                                       axis=1 if self.networks.dformat == "NDHWC" else 2,
-                                                       keepdims=True)
-
-                                    P = tf.squeeze(net,
-                                                   axis=[1, 2, 3]
-                                                   if self.networks.dformat == "NDHWC"
-                                                   else [2, 3, 4])
+                                    P = tf.squeeze(P, axis=(1, 2, 3))
 
                                 Z = tf.stack(tf.split(Z, 2, axis=0), axis=-1)
                                 z_01 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 0]))
