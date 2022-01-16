@@ -383,7 +383,7 @@ class Networks:
         print("=" * 90)
 
         self.is_server = True
-        self.batch_size = 16 if self.is_server else 2
+        self.batch_size = 8 if self.is_server else 2
         self.num_gpus = 4 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
@@ -395,7 +395,7 @@ class Networks:
             self.epochs = 200
         else:
             self.epochs = 25
-        self.temporal_width = 64
+        self.temporal_width = 16
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
@@ -1470,7 +1470,7 @@ class Networks:
 
             self.meta_folder = os.path.join(self.root_path, "meta")
             if self.networks.dataset_name == "ucf101":
-                self.dataset_folder = os.path.join("/mnt/hdd1/UCF101")
+                self.dataset_folder = os.path.join("/mnt/hdd0/UCF101")
                 self.target_path = os.path.join(self.meta_folder, "ucf101.json")
                 self.class_label_path = os.path.join(self.meta_folder, "ucf101_classes.txt")
             elif self.networks.dataset_name == "activitynet":
