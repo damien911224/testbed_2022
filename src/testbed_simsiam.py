@@ -3051,12 +3051,12 @@ class Networks:
                                         P = tf.squeeze(net, axis=(1, 2, 3))
 
                                 Z = tf.stack(tf.split(Z, 2, axis=0), axis=-1)
-                                z_01 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 0]))
-                                z_02 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 1]))
+                                z_01 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 0]), axis=-1)
+                                z_02 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 1]), axis=-1)
 
                                 P = tf.stack(tf.split(P, 2, axis=0), axis=-1)
-                                p_01 = tf.math.l2_normalize(P[..., 0])
-                                p_02 = tf.math.l2_normalize(P[..., 1])
+                                p_01 = tf.math.l2_normalize(P[..., 0], axis=-1)
+                                p_02 = tf.math.l2_normalize(P[..., 1], axis=-1)
 
                                 loss = -(tf.reduce_mean(tf.reduce_sum(p_01 * z_02, axis=1), axis=0) / 2.0 +
                                          tf.reduce_mean(tf.reduce_sum(p_02 * z_01, axis=1), axis=0) / 2.0)
