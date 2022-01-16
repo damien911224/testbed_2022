@@ -2954,7 +2954,7 @@ class Networks:
 
                             if self.phase == "pretraining":
                                 encoder_net = tf.identity(net)
-                                N, T, H, W, C = encoder_net.get_shape().as_list()
+                                # N, T, H, W, C = encoder_net.get_shape().as_list()
                                 # with tf.variable_scope("AvgPool_0a_2xHxW", reuse=tf.AUTO_REUSE):
                                 #     net = tf.nn.avg_pool3d(net,
                                 #                            [1, 2, H, W, 1]
