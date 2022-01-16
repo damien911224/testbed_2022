@@ -2979,15 +2979,8 @@ class Networks:
                                                                  initializer=kernel_initializer,
                                                                  regularizer=kernel_regularizer,
                                                                  trainable=self.is_training)
-                                        biases = tf.get_variable(name="conv_3d/bias",
-                                                                 dtype=self.networks.dtype,
-                                                                 shape=[1, 1, 1, 1, net.get_shape()[-1]],
-                                                                 initializer=bias_initializer,
-                                                                 regularizer=bias_regularizer,
-                                                                 trainable=self.is_training)
-                                        conv = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
-                                                            data_format=self.networks.dformat)
-                                        net = tf.add(conv, biases)
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                           data_format=self.networks.dformat)
                                         net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
                                         net = tf.nn.relu(net)
 
@@ -3000,15 +2993,8 @@ class Networks:
                                                                  initializer=kernel_initializer,
                                                                  regularizer=kernel_regularizer,
                                                                  trainable=self.is_training)
-                                        biases = tf.get_variable(name="conv_3d/bias",
-                                                                 dtype=self.networks.dtype,
-                                                                 shape=[1, 1, 1, 1, net.get_shape()[-1]],
-                                                                 initializer=bias_initializer,
-                                                                 regularizer=bias_regularizer,
-                                                                 trainable=self.is_training)
-                                        conv = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
-                                                            data_format=self.networks.dformat)
-                                        net = tf.add(conv, biases)
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                           data_format=self.networks.dformat)
                                         net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
                                         net = tf.nn.relu(net)
 
@@ -3021,21 +3007,13 @@ class Networks:
                                                                  initializer=kernel_initializer,
                                                                  regularizer=kernel_regularizer,
                                                                  trainable=self.is_training)
-                                        biases = tf.get_variable(name="conv_3d/bias",
-                                                                 dtype=self.networks.dtype,
-                                                                 shape=[1, 1, 1, 1, net.get_shape()[-1]],
-                                                                 initializer=bias_initializer,
-                                                                 regularizer=bias_regularizer,
-                                                                 trainable=self.is_training)
-                                        conv = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
-                                                            data_format=self.networks.dformat)
-                                        net = tf.add(conv, biases)
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                           data_format=self.networks.dformat)
                                         net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
 
-                                    Z = tf.squeeze(net, axis=(1, 2, 3))
+                                    Z = tf.squeeze(tf.identity(net), axis=(1, 2, 3))
 
                                 end_point = "P"
-                                net = tf.reduce_mean(encoder_net, axis=(1, 2, 3), keepdims=True)
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
                                     with tf.variable_scope("Conv3d_0a_1x1x1", reuse=tf.AUTO_REUSE):
                                         kernel = tf.get_variable(name="conv_3d/kernel",
@@ -3046,15 +3024,8 @@ class Networks:
                                                                  initializer=kernel_initializer,
                                                                  regularizer=kernel_regularizer,
                                                                  trainable=self.is_training)
-                                        biases = tf.get_variable(name="conv_3d/bias",
-                                                                 dtype=self.networks.dtype,
-                                                                 shape=[1, 1, 1, 1, net.get_shape()[-1]],
-                                                                 initializer=bias_initializer,
-                                                                 regularizer=bias_regularizer,
-                                                                 trainable=self.is_training)
-                                        conv = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
-                                                            data_format=self.networks.dformat)
-                                        net = tf.add(conv, biases)
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                           data_format=self.networks.dformat)
                                         net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
                                         net = tf.nn.relu(net)
 
@@ -3077,7 +3048,7 @@ class Networks:
                                                             data_format=self.networks.dformat)
                                         net = tf.add(conv, biases)
 
-                                    P = tf.squeeze(net, axis=(1, 2, 3))
+                                        P = tf.squeeze(net, axis=(1, 2, 3))
 
                                 Z = tf.stack(tf.split(Z, 2, axis=0), axis=-1)
                                 z_01 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 0]))
