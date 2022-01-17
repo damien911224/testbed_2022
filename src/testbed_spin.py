@@ -592,7 +592,7 @@ class Networks:
                                                          "UCF101",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0116"),
+                                                         "0114"),
                          "weights.ckpt-{}".format(60))
 
         self.save_ckpt_file_folder = \
@@ -999,7 +999,7 @@ class Networks:
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Finetuning",
-                                                         "0111_no_spin"),
+                                                         "0116"),
                          "weights.ckpt-{}".format(100))
 
         self.model = self.Model(self, is_training=False, phase="finetuning", data_type=self.data_type)
