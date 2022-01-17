@@ -1816,12 +1816,11 @@ class Networks:
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
                 # rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
-                # rot_degrees = [0, 90, 180, 270]
-                rot_degrees = [0]
+                rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_degree = int(np.random.uniform(low=0, high=360))
-                cum_rot_degree = random.choice([0, 90, 180, 270])
+                cum_rot_degree = rot_degrees[rot_index]
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
 
@@ -1852,7 +1851,7 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        cum_rot_degree += rot_degrees[rot_index]
+                        # cum_rot_degree += rot_degrees[rot_index]
                         image = image.rotate(cum_rot_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
@@ -2036,12 +2035,11 @@ class Networks:
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
                 # rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
-                # rot_degrees = [0, 90, 180, 270]
-                rot_degrees = [0]
+                rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_degree = int(np.random.uniform(low=0, high=360))
-                cum_rot_degree = random.choice([0, 90, 180, 270])
+                cum_rot_degree = rot_degrees[rot_index]
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
 
@@ -2072,7 +2070,7 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        cum_rot_degree += rot_degrees[rot_index]
+                        # cum_rot_degree += rot_degrees[rot_index]
                         image = image.rotate(cum_rot_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
