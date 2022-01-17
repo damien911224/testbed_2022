@@ -592,7 +592,7 @@ class Networks:
                                                          "UCF101",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0114"),
+                                                         "0116"),
                          "weights.ckpt-{}".format(60))
 
         self.save_ckpt_file_folder = \
@@ -4004,4 +4004,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.finetune(postfix=args.postfix)
+    networks.test(postfix=args.postfix)
