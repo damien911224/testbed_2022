@@ -1816,10 +1816,12 @@ class Networks:
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
                 # rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
-                rot_degrees = [0, 90, 180, 270]
+                # rot_degrees = [0, 90, 180, 270]
+                rot_degrees = [0]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                # cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                cum_rot_degree = random.choice([0, 90, 180, 270])
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
 
@@ -2034,10 +2036,12 @@ class Networks:
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
                 # rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
-                rot_degrees = [0, 90, 180, 270]
+                # rot_degrees = [0, 90, 180, 270]
+                rot_degrees = [0]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                # cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                cum_rot_degree = random.choice([0, 90, 180, 270])
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
 
