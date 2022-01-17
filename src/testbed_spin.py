@@ -109,9 +109,9 @@ class Networks:
                                                     momentum=0.9)
 
         self.model = self.Model(self, is_training=True, phase="pretraining",
-                                data_type=self.data_type, num_classes=4 + 7)
+                                data_type=self.data_type, num_classes=4 + 4)
         self.model_validation = self.Model(self, is_training=False, phase="pretraining",
-                                           data_type=self.data_type, num_classes=4 + 7)
+                                           data_type=self.data_type, num_classes=4 + 4)
         self.model.build_model()
         self.model_validation.build_model()
 
@@ -196,8 +196,8 @@ class Networks:
 
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
         speed_labels = ["Slow", "Normal", "Fast", "Faster"]
-        # rotation_labels = ["0", "90", "180", "270"]
-        rotation_labels = ["-8", "-4", "-2", "0", "2", "4", "8"]
+        rotation_labels = ["0", "90", "180", "270"]
+        # rotation_labels = ["-8", "-4", "-2", "0", "2", "4", "8"]
 
         with tf.Session() as session:
             session.run(self.train_iterator.initializer)
@@ -1626,7 +1626,7 @@ class Networks:
 
             self.meta_folder = os.path.join(self.root_path, "meta")
             if self.networks.dataset_name == "ucf101":
-                self.dataset_folder = os.path.join("/mnt/hdd0/UCF101")
+                self.dataset_folder = os.path.join("/mnt/hdd1/UCF101")
                 self.target_path = os.path.join(self.meta_folder, "ucf101.json")
                 self.class_label_path = os.path.join(self.meta_folder, "ucf101_classes.txt")
             elif self.networks.dataset_name == "kinetics":
@@ -1785,8 +1785,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                # speed_steps = [1.0]
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -1815,7 +1815,8 @@ class Networks:
 
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
+                # rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
+                rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
                 cum_rot_degree = int(np.random.uniform(low=0, high=360))
@@ -2002,8 +2003,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                # speed_steps = [1.0]
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -2032,7 +2033,8 @@ class Networks:
 
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
+                # rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
+                rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
                 cum_rot_degree = int(np.random.uniform(low=0, high=360))
@@ -4004,4 +4006,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.test(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)
