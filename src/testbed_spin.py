@@ -1820,8 +1820,8 @@ class Networks:
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_degree = int(np.random.uniform(low=0, high=360))
-                # cum_rot_degree = random.choice(rot_degrees)
-                cum_rot_degree = rot_degrees[rot_index]
+                cum_rot_degree = random.choice(rot_degrees)
+                # cum_rot_degree = rot_degrees[rot_index]
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
 
@@ -1852,7 +1852,7 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        # cum_rot_degree += rot_degrees[rot_index]
+                        cum_rot_degree += rot_degrees[rot_index]
                         image = image.rotate(cum_rot_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
@@ -2040,8 +2040,8 @@ class Networks:
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_degree = int(np.random.uniform(low=0, high=360))
-                # cum_rot_degree = random.choice(rot_degrees)
-                cum_rot_degree = rot_degrees[rot_index]
+                cum_rot_degree = random.choice(rot_degrees)
+                # cum_rot_degree = rot_degrees[rot_index]
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
 
@@ -2072,7 +2072,7 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        # cum_rot_degree += rot_degrees[rot_index]
+                        cum_rot_degree += rot_degrees[rot_index]
                         image = image.rotate(cum_rot_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
@@ -3006,8 +3006,8 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 1.0
-            self.rotation_gamma = 0.2
+            self.speed_gamma = 0.0
+            self.rotation_gamma = 1.0
 
             if batch_size is None:
                 self.batch_size = \
