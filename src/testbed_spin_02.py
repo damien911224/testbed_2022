@@ -142,12 +142,10 @@ class Networks:
 
             self.loss_summary_ph = tf.placeholder(dtype=tf.float32)
             self.loss_summary = tf.summary.scalar("loss", self.loss_summary_ph)
-            self.speed_loss_summary_ph = tf.placeholder(dtype=tf.float32)
-            self.speed_loss_summary = tf.summary.scalar("speed_loss", self.speed_loss_summary_ph)
             self.rotation_loss_summary_ph = tf.placeholder(dtype=tf.float32)
             self.rotation_loss_summary = tf.summary.scalar("rotation_loss", self.rotation_loss_summary_ph)
-            self.speed_accuracy_summary_ph = tf.placeholder(dtype=tf.float32)
-            self.speed_accuracy_summary = tf.summary.scalar("speed_accuracy", self.speed_accuracy_summary_ph)
+            self.contrast_loss_summary_ph = tf.placeholder(dtype=tf.float32)
+            self.contrast_loss_summary = tf.summary.scalar("contrast_loss", self.rotation_loss_summary_ph)
             self.rotation_accuracy_summary_ph = tf.placeholder(dtype=tf.float32)
             self.rotation_accuracy_summary = tf.summary.scalar("rotation_accuracy", self.rotation_accuracy_summary_ph)
             self.current_learning_rate_ph = tf.placeholder(dtype=tf.float32)
@@ -157,7 +155,7 @@ class Networks:
             image_summary_size = 10 * 3
             self.image_summary_ph = \
                 tf.placeholder(dtype=tf.uint8,
-                               shape=(image_summary_size, self.input_size[0], self.input_size[1] * 16 + 10 * 15, 3))
+                               shape=(image_summary_size, self.input_size[1] * 2, self.input_size[0] * 16 + 10 * 15, 3))
             self.image_summary = \
                 tf.summary.image("input_images",
                                  self.image_summary_ph,
@@ -165,7 +163,7 @@ class Networks:
 
             self.cam_summary_ph = \
                 tf.placeholder(dtype=tf.uint8,
-                               shape=(image_summary_size, self.input_size[0] * 2, self.input_size[1] * 16 + 10 * 15, 3))
+                               shape=(image_summary_size, self.input_size[1] * 2, self.input_size[0] * 16 + 10 * 15, 3))
             self.cam_summary = \
                 tf.summary.image("cam_images",
                                  self.cam_summary_ph,
@@ -173,16 +171,14 @@ class Networks:
 
             self.train_summaries = tf.summary.merge([self.variable_summary,
                                                      self.loss_summary,
-                                                     self.speed_loss_summary,
                                                      self.rotation_loss_summary,
-                                                     self.speed_accuracy_summary,
+                                                     self.contrast_loss_summary,
                                                      self.rotation_accuracy_summary,
                                                      self.current_learning_rate_summary])
 
             self.validation_summaries = tf.summary.merge([self.loss_summary,
-                                                          self.speed_loss_summary,
                                                           self.rotation_loss_summary,
-                                                          self.speed_accuracy_summary,
+                                                          self.contrast_loss_summary,
                                                           self.rotation_accuracy_summary,
                                                           self.image_summary,
                                                           self.cam_summary])
@@ -195,8 +191,6 @@ class Networks:
         self.previous_best_epoch = None
 
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
-        speed_labels = ["Slow", "Normal", "Fast", "Faster"]
-        # rotation_labels = ["0", "90", "180", "270"]
         rotation_labels = ["-8", "-4", "-2", "0", "2", "4", "8"]
 
         with tf.Session() as session:
@@ -223,9 +217,8 @@ class Networks:
             for epoch in range(1, self.epochs + 1, 1):
                 session.run([self.train_iterator.initializer, self.global_epochs.assign(epoch)])
                 epoch_loss = 0.0
-                epoch_speed_loss = 0.0
                 epoch_rotation_loss = 0.0
-                epoch_speed_accuracy = 0.0
+                epoch_contrast_loss = 0.0
                 epoch_rotation_accuracy = 0.0
                 epoch_learning_rate = 0.0
                 epoch_batch_iteration = 0
@@ -248,37 +241,30 @@ class Networks:
 
                     train_step_start_time = time.time()
                     _, loss, \
-                    speed_loss, \
                     rotation_loss, \
-                    speed_accuracy, \
+                    contrast_loss, \
                     rotation_accuracy, \
-                    speed_predictions, \
                     rotation_predictions, \
                     current_lr = \
                         session.run(
                             [self.train_step,
                              self.model.loss,
-                             self.model.speed_loss,
                              self.model.rotation_loss,
-                             self.model.speed_accuracy,
+                             self.model.contrast_loss,
                              self.model.rotation_accuracy,
-                             self.model.speed_predictions,
                              self.model.rotation_predictions,
                              current_learning_rate],
                             feed_dict={self.model.frames: frame_vectors,
-                                       self.model.targets: target_vectors
-                                       })
+                                       self.model.targets: target_vectors})
 
                     epoch_training_time += time.time() - train_step_start_time
                     epoch_loss += loss
-                    epoch_speed_loss += speed_loss
                     epoch_rotation_loss += rotation_loss
-                    epoch_speed_accuracy += speed_accuracy
+                    epoch_contrast_loss += contrast_loss
                     epoch_rotation_accuracy += rotation_accuracy
                     epoch_learning_rate += current_lr
 
                     if (batch_iteration) % self.display_term == 0:
-                        speed_predictions = np.argmax(speed_predictions, axis=-1)
                         rotation_predictions = np.argmax(rotation_predictions, axis=-1)
                         targets = target_vectors
 
@@ -290,29 +276,25 @@ class Networks:
                             show_indices = random.sample(range(0, len(targets), 1), 3)
                         show_indices.sort()
 
-                        speed_target_labels = \
-                            [speed_labels[targets[show_index, 0]] for show_index in show_indices]
                         rotation_target_labels = \
                             [rotation_labels[targets[show_index, 1]] for show_index in show_indices]
-                        speed_prediction_labels = \
-                            [speed_labels[speed_predictions[show_index]] for show_index in show_indices]
                         rotation_prediction_labels = \
                             [rotation_labels[rotation_predictions[show_index]] for show_index in show_indices]
 
                         print("{:<20s}: {:05d} |{:<20s}: {:03d}({:03d}/{:03d})\n" \
-                              "{:<20s}: {:.9f}/({:.5f},{:.5f}) ({:f})\n" \
-                              "Expected({:03d}): {:<16s},{:<16s}|Prediction({:03d}): {:<16s},{:<16s}\n" \
-                              "Expected({:03d}): {:<16s},{:<16s}|Prediction({:03d}): {:<16s},{:<16s}\n" \
-                              "Expected({:03d}): {:<16s},{:<16s}|Prediction({:03d}): {:<16s},{:<16s}".format(
+                              "{:<20s}: {:.9f}/{:.5f} ({:f})\n" \
+                              "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}\n" \
+                              "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}\n" \
+                              "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}".format(
                             "Epochs", epoch, "Batch Iterations", batch_iteration,
                             epoch_batch_iteration + 1, batch_length,
-                            "Loss", loss, speed_accuracy, rotation_accuracy, current_lr,
-                            show_indices[0] + 1, speed_target_labels[0], rotation_target_labels[0],
-                            show_indices[0] + 1, speed_prediction_labels[0], rotation_prediction_labels[0],
-                            show_indices[1] + 1, speed_target_labels[1], rotation_target_labels[1],
-                            show_indices[1] + 1, speed_prediction_labels[1], rotation_prediction_labels[1],
-                            show_indices[2] + 1, speed_target_labels[2], rotation_target_labels[2],
-                            show_indices[2] + 1, speed_prediction_labels[2], rotation_prediction_labels[2]))
+                            "Loss", loss, rotation_accuracy, current_lr,
+                            show_indices[0] + 1, rotation_target_labels[0],
+                            show_indices[0] + 1, rotation_prediction_labels[0],
+                            show_indices[1] + 1, rotation_target_labels[1],
+                            show_indices[1] + 1, rotation_prediction_labels[1],
+                            show_indices[2] + 1, rotation_target_labels[2],
+                            show_indices[2] + 1, rotation_prediction_labels[2]))
 
                     epoch_batch_iteration += 1
                     batch_iteration += 1
@@ -326,9 +308,8 @@ class Networks:
                                                               epoch_batch_iteration))
 
                 epoch_loss /= float(epoch_batch_iteration)
-                epoch_speed_loss /= float(epoch_batch_iteration)
                 epoch_rotation_loss /= float(epoch_batch_iteration)
-                epoch_speed_accuracy /= float(epoch_batch_iteration)
+                epoch_contrast_loss /= float(epoch_batch_iteration)
                 epoch_rotation_accuracy /= float(epoch_batch_iteration)
                 epoch_learning_rate /= float(epoch_batch_iteration)
                 epoch_training_time /= float(epoch_batch_iteration)
@@ -336,9 +317,8 @@ class Networks:
 
                 train_summary = session.run(self.train_summaries,
                                             feed_dict={self.loss_summary_ph: epoch_loss,
-                                                       self.speed_loss_summary_ph: epoch_speed_loss,
                                                        self.rotation_loss_summary_ph: epoch_rotation_loss,
-                                                       self.speed_accuracy_summary_ph: epoch_speed_accuracy,
+                                                       self.contrast_loss_summary_ph: epoch_contrast_loss,
                                                        self.rotation_accuracy_summary_ph: epoch_rotation_accuracy,
                                                        self.current_learning_rate_ph: epoch_learning_rate
                                                        })
@@ -363,9 +343,8 @@ class Networks:
                     print("Validation on Epochs {:05d}".format(epoch))
 
                     validation_loss = 0.0
-                    validation_speed_loss = 0.0
                     validation_rotation_loss = 0.0
-                    validation_speed_accuracy = 0.0
+                    validation_contrast_loss = 0.0
                     validation_rotation_accuracy = 0.0
                     cam_images = list()
                     input_images = list()
@@ -382,36 +361,28 @@ class Networks:
                             break
 
                         loss, \
-                        speed_loss, \
                         rotation_loss, \
-                        speed_accuracy, \
+                        contrast_loss, \
                         rotation_accuracy, \
-                        speed_cams, \
                         rotation_cams, \
-                        speed_predictions, \
                         rotation_predictions = \
                             session.run(
                                 [self.model_validation.loss,
-                                 self.model_validation.speed_loss,
                                  self.model_validation.rotation_loss,
-                                 self.model_validation.speed_accuracy,
+                                 self.model_validation.contrast_loss,
                                  self.model_validation.rotation_accuracy,
-                                 self.model_validation.speed_cams,
                                  self.model_validation.rotation_cams,
-                                 self.model_validation.speed_predictions,
                                  self.model_validation.rotation_predictions],
                                 feed_dict={self.model_validation.frames: frame_vectors,
                                            self.model_validation.targets: target_vectors
                                            })
 
                         validation_loss += loss
-                        validation_speed_loss += speed_loss
                         validation_rotation_loss += rotation_loss
-                        validation_speed_accuracy += speed_accuracy
+                        validation_contrast_loss += contrast_loss
                         validation_rotation_accuracy += rotation_accuracy
 
                         if (validation_batch_index + 1) % self.validation_display_term == 0:
-                            speed_predictions = np.argmax(speed_predictions, axis=-1)
                             rotation_predictions = np.argmax(rotation_predictions, axis=-1)
                             targets = target_vectors
 
@@ -423,44 +394,40 @@ class Networks:
                                 show_indices = random.sample(range(0, len(targets), 1), 3)
                             show_indices.sort()
 
-                            speed_target_labels = \
-                                [speed_labels[targets[show_index, 0]] for show_index in show_indices]
                             rotation_target_labels = \
                                 [rotation_labels[targets[show_index, 1]] for show_index in show_indices]
-                            speed_prediction_labels = \
-                                [speed_labels[speed_predictions[show_index]] for show_index in show_indices]
                             rotation_prediction_labels = \
                                 [rotation_labels[rotation_predictions[show_index]] for show_index in show_indices]
 
                             print(
                                 "{:<20s}: {:05d} |{:<20s}: {:03d}/{:03d}\n" \
-                                "{:<20s}: {:.9f}/({:.5f},{:.5f}) ({})\n" \
-                                "Expected({:03d}): {:<16s},{:<16s}|Prediction({:03d}): {:<16s},{:<16s}\n" \
-                                "Expected({:03d}): {:<16s},{:<16s}|Prediction({:03d}): {:<16s},{:<16s}\n" \
-                                "Expected({:03d}): {:<16s},{:<16s}|Prediction({:03d}): {:<16s},{:<16s}".format(
+                                "{:<20s}: {:.9f}/{:.5f} ({})\n" \
+                                "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}\n" \
+                                "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}\n" \
+                                "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}".format(
                                     "Epochs", epoch, "Batch Iterations",
                                     validation_batch_index + 1, loop_rounds,
-                                    "Loss", loss, speed_accuracy, rotation_accuracy,
+                                    "Loss", loss, rotation_accuracy,
                                     "VALIDATION",
-                                    show_indices[0] + 1, speed_target_labels[0], rotation_target_labels[0],
-                                    show_indices[0] + 1, speed_prediction_labels[0], rotation_prediction_labels[0],
-                                    show_indices[1] + 1, speed_target_labels[1], rotation_target_labels[1],
-                                    show_indices[1] + 1, speed_prediction_labels[1], rotation_prediction_labels[1],
-                                    show_indices[2] + 1, speed_target_labels[2], rotation_target_labels[2],
-                                    show_indices[2] + 1, speed_prediction_labels[2], rotation_prediction_labels[2]))
+                                    show_indices[0] + 1, rotation_target_labels[0],
+                                    show_indices[0] + 1, rotation_prediction_labels[0],
+                                    show_indices[1] + 1, rotation_target_labels[1],
+                                    show_indices[1] + 1, rotation_prediction_labels[1],
+                                    show_indices[2] + 1, rotation_target_labels[2],
+                                    show_indices[2] + 1, rotation_prediction_labels[2]))
 
                         if validation_batch_index < 10:
                             # Use jet colormap to colorize heatmap
                             jet = cm.get_cmap("jet")
                             # Use RGB values of the colormap
                             jet_colors = jet(np.arange(256))[:, :3] * 255.0
-                            buffer = np.zeros(dtype=np.uint8, shape=(self.input_size[1], 10, 3))
+                            buffer = np.zeros(dtype=np.uint8, shape=(self.input_size[1] * 2, 10, 3))
                             sampled_indices = random.sample(range(len(frame_vectors)), 3)
                             for n_i in sampled_indices:
                                 sampled_t = random.choice(range(self.temporal_width - 16 + 1))
-                                s_cam = np.array(speed_cams[n_i] * 255.0, dtype=np.uint8)
                                 r_cam = np.array(rotation_cams[n_i] * 255.0, dtype=np.uint8)
                                 t_image = np.array(((frame_vectors[n_i] + 1.0) / 2.0) * 255.0, dtype=np.uint8)
+                                t_image = np.concatenate(np.split(t_image, 2, axis=-1), axis=1)
                                 cams = list()
                                 images = list()
                                 for t_i in range(sampled_t, sampled_t + 16):
@@ -468,19 +435,14 @@ class Networks:
                                     if t_i < sampled_t + 16 - 1:
                                         images.append(buffer)
 
-                                    speed_cam = s_cam[t_i]
-                                    speed_cam = jet_colors[speed_cam]
-                                    speed_cam = speed_cam * 0.4 + t_image[t_i]
-                                    speed_cam = np.clip(np.round(speed_cam), 0.0, 255.0).astype(dtype=np.uint8)
                                     rotation_cam = r_cam[t_i]
                                     rotation_cam = jet_colors[rotation_cam]
                                     rotation_cam = rotation_cam * 0.4 + t_image[t_i]
                                     rotation_cam = np.clip(np.round(rotation_cam), 0.0, 255.0).astype(dtype=np.uint8)
 
-                                    cam_image = np.concatenate([speed_cam, rotation_cam], axis=0)
-                                    cams.append(cam_image)
+                                    cams.append(rotation_cam)
                                     if t_i < sampled_t + 16 - 1:
-                                        cams.append(np.concatenate([buffer, buffer], axis=0))
+                                        cams.append(buffer)
 
                                 cam = np.concatenate(cams, axis=1)
                                 image = np.concatenate(images, axis=1)
@@ -488,17 +450,15 @@ class Networks:
                                 input_images.append(image)
 
                     validation_loss /= float(loop_rounds)
-                    validation_speed_loss /= float(loop_rounds)
                     validation_rotation_loss /= float(loop_rounds)
-                    validation_speed_accuracy /= float(loop_rounds)
+                    validation_contrast_loss /= float(loop_rounds)
                     validation_rotation_accuracy /= float(loop_rounds)
 
                     validation_summary = \
                         session.run(self.validation_summaries,
                                     feed_dict={self.loss_summary_ph: validation_loss,
-                                               self.speed_loss_summary_ph: validation_speed_loss,
                                                self.rotation_loss_summary_ph: validation_rotation_loss,
-                                               self.speed_accuracy_summary_ph: validation_speed_accuracy,
+                                               self.contrast_loss_summary_ph: validation_contrast_loss,
                                                self.rotation_accuracy_summary_ph: validation_rotation_accuracy,
                                                self.image_summary_ph: input_images,
                                                self.cam_summary_ph: cam_images})
@@ -538,7 +498,6 @@ class Networks:
 
                     print("Validation Results ...")
                     print("Validation Loss {:.5f}".format(validation_loss))
-                    print("Validation Speed Accuracy {:.5f}".format(validation_speed_accuracy))
                     print("Validation Rotation Accuracy {:.5f}".format(validation_rotation_accuracy))
                     print("=" * 90)
 
@@ -1783,9 +1742,6 @@ class Networks:
 
                 identity = splits[0]
                 frame_length = int(splits[1])
-                # class_index = int(splits[2])
-
-                # speed_steps = [0.5, 1.0, 2.0, 3.0]
                 speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
@@ -1804,56 +1760,38 @@ class Networks:
 
                 height, width, _ = one_frame.shape
 
-                # total_crop_height = height - self.dataset.networks.input_size[1]
                 total_crop_height = height - 224
                 crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                # total_crop_width = width - self.dataset.networks.input_size[0]
                 total_crop_width = width - 224
                 crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
                 is_flip = np.random.choice([True, False], 1)
 
-                frames = list()
-                # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
                 rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
-                # rot_degrees = [0, 90, 180, 270]
-                rot_index = random.choice(range(len(rot_degrees)))
-                # cum_rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_degree = int(np.random.uniform(low=0, high=360))
-                # cum_rot_degree = random.choice(rot_degrees)
-                # cum_rot_degree = rot_degrees[rot_index]
-                # rot_index = cum_rot_index
-                targets = [speed_index, rot_index]
+                rot_index_01 = random.choice(range(len(rot_degrees)))
+                cum_rot_degree_01 = int(np.random.uniform(low=0, high=360))
+                while True:
+                    rot_index_02 = random.choice(range(len(rot_degrees)))
+                    if rot_index_02 != rot_index_01:
+                        break
+                cum_rot_degree_02 = int(np.random.uniform(low=0, high=360))
+                targets = [rot_index_01, rot_index_02]
 
+                frames = list()
                 rand_aug = RandAugment(n=2, m=5)
                 for frame_index in target_frames:
-                    # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                    # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     rand_aug.n = random.choice(range(2))
                     rand_aug.m = random.choice(range(5))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
-                        split = 0
-                        # image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-                        # image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
-                        #         crop_left:crop_left + self.dataset.networks.input_size[0], :]
-                        # if is_flip:
-                        #     image = cv2.flip(image, 1)
-                        split = 0
                         image = Image.open(image_path)
-                        # image = image.crop((crop_left, crop_top,
-                        #                     crop_left + self.dataset.networks.input_size[1],
-                        #                     crop_top + self.dataset.networks.input_size[0]))
                         image = image.crop((crop_left, crop_top,
                                             crop_left + 224,
                                             crop_top + 224))
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
-
-                        cum_rot_degree += rot_degrees[rot_index]
-                        image = image.rotate(cum_rot_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
                                             self.dataset.networks.input_size[0] // 2,
@@ -1863,18 +1801,27 @@ class Networks:
                                             self.dataset.networks.input_size[0]))
 
                         image = rand_aug(image)
-                        image = np.asarray(image)
 
-                        image = image.astype(np.float32)
-                        image = np.divide(image, 255.0)
-                        image = np.multiply(np.subtract(image, 0.5), 2.0)
+                        cum_rot_degree_01 += rot_degrees[rot_index_01]
+                        image_01 = image.rotate(cum_rot_degree_01)
+                        cum_rot_degree_02 += rot_degrees[rot_index_02]
+                        image_02 = image.rotate(cum_rot_degree_02)
 
-                        # cum_rot_index += rot_index
-                        # cum_rot_index %= 4
-                        # if cum_rot_index >= 1:
-                        #     image = cv2.rotate(image, rot_degrees[cum_rot_index - 1])
+                        image_01 = np.asarray(image_01)
+                        image_01 = image_01.astype(np.float32)
+                        image_01 = np.divide(image_01, 255.0)
+                        image_01 = np.multiply(np.subtract(image_01, 0.5), 2.0)
+
+                        image_02 = np.asarray(image_02)
+                        image_02 = image.astype(np.float32)
+                        image_02 = np.divide(image_02, 255.0)
+                        image_02 = np.multiply(np.subtract(image_02, 0.5), 2.0)
+
+                        image = np.concatenate([image_01, image_02], axis=-1)
 
                         frames.append(image)
+
+                frames = np.stack(frames, axis=0)
 
                 if self.dataset.networks.dformat == "NCDHW":
                     frames = np.transpose(frames, [3, 0, 1, 2])
@@ -2024,56 +1971,39 @@ class Networks:
 
                 height, width, _ = one_frame.shape
 
-                # total_crop_height = height - self.dataset.networks.input_size[1]
                 total_crop_height = height - 224
                 crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                # total_crop_width = width - self.dataset.networks.input_size[0]
                 total_crop_width = width - 224
                 crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
                 is_flip = np.random.choice([True, False], 1)
 
                 frames = list()
-                # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
                 rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
-                # rot_degrees = [0, 90, 180, 270]
-                rot_index = random.choice(range(len(rot_degrees)))
-                # cum_rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_degree = int(np.random.uniform(low=0, high=360))
-                # cum_rot_degree = random.choice(rot_degrees)
-                # cum_rot_degree = rot_degrees[rot_index]
-                # rot_index = cum_rot_index
-                targets = [speed_index, rot_index]
+                rot_index_01 = random.choice(range(len(rot_degrees)))
+                cum_rot_degree_01 = int(np.random.uniform(low=0, high=360))
+                while True:
+                    rot_index_02 = random.choice(range(len(rot_degrees)))
+                    if rot_index_02 != rot_index_01:
+                        break
+                cum_rot_degree_02 = int(np.random.uniform(low=0, high=360))
+                targets = [rot_index_01, rot_index_02]
 
+                frames = list()
                 rand_aug = RandAugment(n=2, m=5)
                 for frame_index in target_frames:
-                    # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                    # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     rand_aug.n = random.choice(range(2))
                     rand_aug.m = random.choice(range(5))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
-                        split = 0
-                        # image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-                        # image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
-                        #         crop_left:crop_left + self.dataset.networks.input_size[0], :]
-                        # if is_flip:
-                        #     image = cv2.flip(image, 1)
-                        split = 0
                         image = Image.open(image_path)
-                        # image = image.crop((crop_left, crop_top,
-                        #                     crop_left + self.dataset.networks.input_size[1],
-                        #                     crop_top + self.dataset.networks.input_size[0]))
                         image = image.crop((crop_left, crop_top,
                                             crop_left + 224,
                                             crop_top + 224))
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
-
-                        cum_rot_degree += rot_degrees[rot_index]
-                        image = image.rotate(cum_rot_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
                                             self.dataset.networks.input_size[0] // 2,
@@ -2083,18 +2013,27 @@ class Networks:
                                             self.dataset.networks.input_size[0]))
 
                         image = rand_aug(image)
-                        image = np.asarray(image)
 
-                        image = image.astype(np.float32)
-                        image = np.divide(image, 255.0)
-                        image = np.multiply(np.subtract(image, 0.5), 2.0)
+                        cum_rot_degree_01 += rot_degrees[rot_index_01]
+                        image_01 = image.rotate(cum_rot_degree_01)
+                        cum_rot_degree_02 += rot_degrees[rot_index_02]
+                        image_02 = image.rotate(cum_rot_degree_02)
 
-                        # cum_rot_index += rot_index
-                        # cum_rot_index %= 4
-                        # if cum_rot_index >= 1:
-                        #     image = cv2.rotate(image, rot_degrees[cum_rot_index - 1])
+                        image_01 = np.asarray(image_01)
+                        image_01 = image_01.astype(np.float32)
+                        image_01 = np.divide(image_01, 255.0)
+                        image_01 = np.multiply(np.subtract(image_01, 0.5), 2.0)
+
+                        image_02 = np.asarray(image_02)
+                        image_02 = image.astype(np.float32)
+                        image_02 = np.divide(image_02, 255.0)
+                        image_02 = np.multiply(np.subtract(image_02, 0.5), 2.0)
+
+                        image = np.concatenate([image_01, image_02], axis=-1)
 
                         frames.append(image)
+
+                frames = np.stack(frames, axis=0)
 
                 if self.dataset.networks.dformat == "NCDHW":
                     frames = np.transpose(frames, [3, 0, 1, 2])
@@ -3006,7 +2945,6 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 0.0
             self.rotation_gamma = 1.0
             self.contrast_gamma = 1.0
 
@@ -3047,13 +2985,10 @@ class Networks:
             self.gradients = list()
             self.loss = 0.0
             if self.phase == "pretraining":
-                self.speed_loss = 0.0
                 self.rotation_loss = 0.0
-                self.speed_accuracy = 0.0
+                self.contrast_loss = 0.0
                 self.rotation_accuracy = 0.0
-                self.speed_cams = list()
                 self.rotation_cams = list()
-                self.speed_predictions = list()
                 self.rotation_predictions = list()
             else:
                 self.accuracy = 0.0
@@ -3071,20 +3006,20 @@ class Networks:
             batch_size = \
                 self.batch_size if self.batch_size is None \
                     else self.batch_size * self.num_gpus
-            if self.networks.dformat == "NDHWC":
+            if self.phase == "pretraining":
+                self.frames = \
+                    tf.placeholder(dtype=self.networks.dtype, shape=(batch_size,
+                                                                     self.temporal_width,
+                                                                     self.input_size[0],
+                                                                     self.input_size[1],
+                                                                     self.input_size[2] * 2))
+            else:
                 self.frames = \
                     tf.placeholder(dtype=self.networks.dtype, shape=(batch_size,
                                                                      self.temporal_width,
                                                                      self.input_size[0],
                                                                      self.input_size[1],
                                                                      self.input_size[2]))
-            else:
-                self.frames = \
-                    tf.placeholder(dtype=self.networks.dtype, shape=(batch_size,
-                                                                     self.input_size[2],
-                                                                     self.temporal_width,
-                                                                     self.input_size[0],
-                                                                     self.input_size[1]))
 
             if self.phase == "pretraining":
                 self.targets = tf.placeholder(dtype=tf.int64,
@@ -3105,6 +3040,10 @@ class Networks:
                                                      self.batch_size * (device_id + 1)]
                             else:
                                 inputs = self.frames
+
+                            if self.phase == "pretraining":
+                                inputs = tf.concat(tf.split(inputs, 2, axis=-1), axis=0)
+
                             end_point = "Encoder"
                             with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
                                 net = I3D.build_model(inputs=inputs,
@@ -3114,123 +3053,228 @@ class Networks:
                                                       dformat=self.networks.dformat,
                                                       is_training=self.is_training,
                                                       scope=self.i3d_name)
-
+                            if self.phase == "pretraining":
                                 encoder_net = tf.identity(net)
 
-                            end_point = "Logits"
-                            with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-                                N, T, H, W, C = net.get_shape().as_list()
-                                with tf.variable_scope("AvgPool_0a_2xHxW", reuse=tf.AUTO_REUSE):
-                                    net = tf.nn.avg_pool3d(net,
-                                                           [1, 2, H, W, 1]
-                                                           if self.networks.dformat == "NDHWC"
-                                                           else [1, 1, 2, 7, 7],
-                                                           strides=[1, 1, 1, 1, 1],
-                                                           padding="VALID",
+                                end_point = "Z"
+                                net = tf.reduce_mean(encoder_net, axis=(1, 2, 3), keepdims=True)
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    with tf.variable_scope("Conv3d_0a_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1],
+                                                                        net.get_shape()[-1]],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
                                                            data_format=self.networks.dformat)
+                                        net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
+                                        net = tf.nn.relu(net)
 
-                                with tf.variable_scope("Dropout_0b", reuse=tf.AUTO_REUSE):
-                                    net = tf.layers.dropout(net, rate=self.dropout_prob, training=self.is_training)
+                                    with tf.variable_scope("Conv3d_0b_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1],
+                                                                        net.get_shape()[-1]],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                           data_format=self.networks.dformat)
+                                        net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
+                                        net = tf.nn.relu(net)
 
-                                with tf.variable_scope("Conv3d_0c_1x1x1", reuse=tf.AUTO_REUSE):
-                                    kernel = tf.get_variable(name="conv_3d/kernel",
-                                                             dtype=self.networks.dtype,
-                                                             shape=[1, 1, 1,
-                                                                    net.get_shape()[-1]
-                                                                    if self.networks.dformat == "NDHWC"
-                                                                    else net.get_shape()[1],
-                                                                    self.num_classes],
-                                                             initializer=kernel_initializer,
-                                                             regularizer=kernel_regularizer,
-                                                             trainable=self.is_training)
-                                    biases = tf.get_variable(name="conv_3d/bias",
-                                                             dtype=self.networks.dtype,
-                                                             shape=[1, 1, 1, 1,
-                                                                    self.num_classes]
-                                                             if self.networks.dformat == "NDHWC"
-                                                             else [1, self.num_classes,
-                                                                   1, 1, 1],
-                                                             initializer=bias_initializer,
-                                                             regularizer=bias_regularizer,
-                                                             trainable=self.is_training)
-                                    conv = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
-                                                        data_format=self.networks.dformat)
-                                    net = tf.add(conv, biases)
+                                    with tf.variable_scope("Conv3d_0c_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1],
+                                                                        net.get_shape()[-1]],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                           data_format=self.networks.dformat)
+                                        net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
 
-                                net = tf.reduce_mean(net,
-                                                     axis=1 if self.networks.dformat == "NDHWC" else 2,
-                                                     keepdims=True)
+                                end_point = "RotationLogits"
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    with tf.variable_scope("Conv3d_0c_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1]
+                                                                        if self.networks.dformat == "NDHWC"
+                                                                        else net.get_shape()[1],
+                                                                        self.num_classes],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        biases = tf.get_variable(name="conv_3d/bias",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1, 1,
+                                                                        self.num_classes]
+                                                                 if self.networks.dformat == "NDHWC"
+                                                                 else [1, self.num_classes,
+                                                                       1, 1, 1],
+                                                                 initializer=bias_initializer,
+                                                                 regularizer=bias_regularizer,
+                                                                 trainable=self.is_training)
+                                        rotation_logits = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                            data_format=self.networks.dformat)
+                                        rotation_logits = tf.add(rotation_logits, biases)
 
-                                net = tf.squeeze(net,
-                                                 axis=[1, 2, 3]
-                                                 if self.networks.dformat == "NDHWC"
-                                                 else [2, 3, 4])
+                                    rotation_logits = tf.squeeze(rotation_logits, axis=(1, 2, 3))
 
-                            if self.batch_size is not None:
-                                targets = self.targets[
-                                          self.batch_size * device_id:
-                                          self.batch_size * (device_id + 1)]
-                            else:
-                                targets = self.targets
+                                end_point = "P"
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    with tf.variable_scope("Conv3d_0a_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1],
+                                                                        net.get_shape()[-1]],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                           data_format=self.networks.dformat)
+                                        net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
+                                        net = tf.nn.relu(net)
 
-                            if self.phase == "pretraining":
-                                speed_logits = net[..., :4]
-                                rotation_logits = net[..., 4:]
-                                self.speed_predictions.append(tf.nn.softmax(speed_logits, axis=-1))
-                                self.rotation_predictions.append(tf.nn.softmax(rotation_logits, axis=-1))
+                                    with tf.variable_scope("Conv3d_0b_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1],
+                                                                        net.get_shape()[-1]],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        biases = tf.get_variable(name="conv_3d/bias",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1, 1, net.get_shape()[-1]],
+                                                                 initializer=bias_initializer,
+                                                                 regularizer=bias_regularizer,
+                                                                 trainable=self.is_training)
+                                        conv = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                            data_format=self.networks.dformat)
+                                        net = tf.add(conv, biases)
 
-                                self.speed_accuracy += \
-                                    tf.reduce_mean(
-                                        tf.cast(
-                                            tf.equal(
-                                                tf.argmax(self.speed_predictions[-1],
-                                                          axis=-1),
-                                                targets[..., 0]),
-                                            self.networks.dtype))
+                                        P = tf.squeeze(net, axis=(1, 2, 3))
+
+                                Z = tf.squeeze(tf.identity(net), axis=(1, 2, 3))
+                                Z = tf.stack(tf.split(Z, 2, axis=0), axis=-1)
+                                z_01 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 0]), axis=-1)
+                                z_02 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 1]), axis=-1)
+
+                                P = tf.stack(tf.split(P, 2, axis=0), axis=-1)
+                                p_01 = tf.math.l2_normalize(P[..., 0], axis=-1)
+                                p_02 = tf.math.l2_normalize(P[..., 1], axis=-1)
+
+                                contrast_loss = \
+                                    -(tf.reduce_mean(tf.reduce_sum(p_01 * z_02, axis=1), axis=0) / 2.0 +
+                                      tf.reduce_mean(tf.reduce_sum(p_02 * z_01, axis=1), axis=0) / 2.0)
+                                self.contrast_loss += contrast_loss
+
+                                rotation_logits = tf.stack(tf.split(rotation_logits, 2, axis=0), axis=-1)
+                                rotation_logits_01 = rotation_logits[..., 0]
+                                rotation_logits_02 = rotation_logits[..., 1]
+                                self.rotation_predictions.append(tf.nn.softmax(rotation_logits_01, axis=-1))
                                 self.rotation_accuracy += \
                                     tf.reduce_mean(
                                         tf.cast(
                                             tf.equal(
                                                 tf.argmax(self.rotation_predictions[-1],
                                                           axis=-1),
-                                                targets[..., 1]),
+                                                targets[..., 0]),
                                             self.networks.dtype))
 
-                                speed_loss = \
+                                rotation_loss_01 = \
                                     tf.reduce_mean(
                                         tf.nn.sparse_softmax_cross_entropy_with_logits(
-                                            labels=targets[..., 0], logits=speed_logits))
-                                self.speed_loss += speed_loss
-                                rotation_loss = \
+                                            labels=targets[..., 0], logits=rotation_logits_01))
+                                rotation_loss_02 = \
                                     tf.reduce_mean(
                                         tf.nn.sparse_softmax_cross_entropy_with_logits(
-                                            labels=targets[..., 1], logits=rotation_logits))
+                                            labels=targets[..., 1], logits=rotation_logits_02))
+                                rotation_loss = (rotation_loss_01 + rotation_loss_02) / 2.0
                                 self.rotation_loss += rotation_loss
-                                loss = self.speed_gamma * speed_loss + self.rotation_gamma * rotation_loss
+                                loss = self.rotation_gamma * rotation_loss + self.contrast_gamma * contrast_loss
                                 self.loss += loss
 
-                                # speed_p = tf.one_hot(tf.argmax(speed_logits, axis=-1), depth=4, axis=-1)
-                                # speed_p = tf.stop_gradient(speed_p)
-                                # speed_cams = tf.gradients(tf.reduce_sum(speed_p * speed_logits), inputs)[0]
-                                speed_cams = tf.maximum(tf.gradients(tf.reduce_sum(speed_logits), inputs)[0], 0.0)
-                                # rotation_p = tf.one_hot(tf.argmax(rotation_logits, axis=-1), depth=4, axis=-1)
-                                # rotation_p = tf.stop_gradient(rotation_p)
-                                # rotation_cams = tf.gradients(tf.reduce_sum(rotation_p * rotation_logits), inputs)[0]
-                                rotation_cams = tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits), inputs)[0], 0.0)
-
-                                speed_cams = tf.reduce_sum(speed_cams, axis=-1)
-                                # speed_cams -= tf.reduce_min(speed_cams)
-                                speed_cams -= tf.reduce_min(speed_cams, axis=(2, 3), keepdims=True)
-                                # speed_cams /= tf.reduce_max(speed_cams) + 1.0e-7
-                                speed_cams /= tf.reduce_max(speed_cams, axis=(2, 3), keepdims=True) + 1.0e-7
-                                self.speed_cams.append(speed_cams)
-                                rotation_cams = tf.reduce_sum(rotation_cams, axis=-1)
-                                # rotation_cams -= tf.reduce_min(rotation_cams)
-                                rotation_cams -= tf.reduce_min(rotation_cams, axis=(2, 3), keepdims=True)
-                                # rotation_cams /= tf.reduce_max(rotation_cams) + 1.0e-7
-                                rotation_cams /= tf.reduce_max(rotation_cams, axis=(2, 3), keepdims=True) + 1.0e-7
+                                rotation_cams_01 = \
+                                    tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits_01), inputs)[0], 0.0)
+                                rotation_cams_02 = \
+                                    tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits_02), inputs)[0], 0.0)
+                                rotation_cams_01 = tf.reduce_sum(rotation_cams_01, axis=-1)
+                                rotation_cams_01 -= tf.reduce_min(rotation_cams_01, axis=(2, 3), keepdims=True)
+                                rotation_cams_01 /= tf.reduce_max(rotation_cams_01, axis=(2, 3), keepdims=True) + 1.0e-7
+                                rotation_cams_02 = tf.reduce_sum(rotation_cams_02, axis=-1)
+                                rotation_cams_02 -= tf.reduce_min(rotation_cams_02, axis=(2, 3), keepdims=True)
+                                rotation_cams_02 /= tf.reduce_max(rotation_cams_02, axis=(2, 3), keepdims=True) + 1.0e-7
+                                rotation_cams = tf.concat([rotation_cams_01, rotation_cams_02], axis=2)
                                 self.rotation_cams.append(rotation_cams)
                             else:
+                                end_point = "Logits"
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    N, T, H, W, C = net.get_shape().as_list()
+                                    with tf.variable_scope("AvgPool_0a_2xHxW", reuse=tf.AUTO_REUSE):
+                                        net = tf.nn.avg_pool3d(net,
+                                                               [1, 2, H, W, 1]
+                                                               if self.networks.dformat == "NDHWC"
+                                                               else [1, 1, 2, 7, 7],
+                                                               strides=[1, 1, 1, 1, 1],
+                                                               padding="VALID",
+                                                               data_format=self.networks.dformat)
+
+                                    with tf.variable_scope("Dropout_0b", reuse=tf.AUTO_REUSE):
+                                        net = tf.layers.dropout(net, rate=self.dropout_prob, training=self.is_training)
+
+                                    with tf.variable_scope("Conv3d_0c_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1]
+                                                                        if self.networks.dformat == "NDHWC"
+                                                                        else net.get_shape()[1],
+                                                                        self.num_classes],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        biases = tf.get_variable(name="conv_3d/bias",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1, 1,
+                                                                        self.num_classes]
+                                                                 if self.networks.dformat == "NDHWC"
+                                                                 else [1, self.num_classes,
+                                                                       1, 1, 1],
+                                                                 initializer=bias_initializer,
+                                                                 regularizer=bias_regularizer,
+                                                                 trainable=self.is_training)
+                                        conv = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                            data_format=self.networks.dformat)
+                                        net = tf.add(conv, biases)
+
+                                    net = tf.reduce_mean(net,
+                                                         axis=1 if self.networks.dformat == "NDHWC" else 2,
+                                                         keepdims=True)
+
+                                    net = tf.squeeze(net,
+                                                     axis=[1, 2, 3]
+                                                     if self.networks.dformat == "NDHWC"
+                                                     else [2, 3, 4])
+
+                                if self.batch_size is not None:
+                                    targets = self.targets[
+                                              self.batch_size * device_id:
+                                              self.batch_size * (device_id + 1)]
+                                else:
+                                    targets = self.targets
+
                                 self.predictions.append(tf.nn.softmax(net, axis=-1))
 
                                 if self.batch_size is not None:
@@ -3269,7 +3313,7 @@ class Networks:
             with tf.device("/cpu:0"):
                 self.loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                 if self.phase == "pretraining":
-                    self.speed_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
+                    self.rotation_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.rotation_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.speed_accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.rotation_accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
