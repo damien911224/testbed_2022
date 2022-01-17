@@ -379,14 +379,14 @@ class Networks:
                     print("Validation Loss {:.5f}".format(validation_loss))
                     print("=" * 90)
 
-    def finetune(self):
+    def finetune(self, postfix):
         print("=" * 90)
         print("Networks Training")
         print("=" * 90)
 
         self.is_server = True
         self.batch_size = 8 if self.is_server else 2
-        self.num_gpus = 4 if self.is_server else 1
+        self.num_gpus = 2 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
         self.dataset_name = "ucf101"
@@ -394,10 +394,10 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            self.epochs = 200
+            self.epochs = 100
         else:
-            self.epochs = 25
-        self.temporal_width = 16
+            self.epochs = 100
+        self.temporal_width = 64
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
@@ -426,28 +426,29 @@ class Networks:
             os.path.join(self.dataset.root_path,
                          "networks", "weights",
                          "save", "{}_{}_{}_{}_{}".format(self.model_name,
-                                                         self.dataset_name.upper(),
+                                                         "UCF101",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0110"),
+                                                         "0116_simsiam"),
                          "weights.ckpt-{}".format(60))
 
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
                          "networks", "weights",
-                         "save", "{}_{}_{}_{}_{}".format(self.model_name,
-                                                         self.dataset_name.upper(),
-                                                         "RGB" if self.data_type == "images" else "Flow",
-                                                         "Finetuning",
-                                                         self.train_date))
+                         "save", "{}_{}_{}_{}_{}{}".format(self.model_name,
+                                                           self.dataset_name.upper(),
+                                                           "RGB" if self.data_type == "images" else "Flow",
+                                                           "Finetuning",
+                                                           self.train_date, "" if postfix is None else "_" + postfix))
 
         self.summary_folder = os.path.join(self.dataset.root_path,
                                            "networks", "summaries",
-                                           "{}_{}_{}_{}_{}".format(self.model_name,
-                                                                   self.dataset_name.upper(),
-                                                                   "RGB" if self.data_type == "images" else "Flow",
-                                                                   "Finetuning",
-                                                                   self.train_date))
+                                           "{}_{}_{}_{}_{}{}".format(
+                                               self.model_name,
+                                               self.dataset_name.upper(),
+                                               "RGB" if self.data_type == "images" else "Flow",
+                                               "Finetuning",
+                                               self.train_date, "" if postfix is None else "_" + postfix))
         self.train_summary_file_path = os.path.join(self.summary_folder, "train_summary")
         self.validation_summary_file_path = os.path.join(self.summary_folder, "validation_summary")
 
@@ -461,7 +462,7 @@ class Networks:
         if self.dataset_name == "ucf101":
             boundaries = [int(round(self.epochs * 0.80)), int(round(self.epochs * 0.90))]
         else:
-            boundaries = [20, 23]
+            boundaries = [int(round(self.epochs * 0.80)), int(round(self.epochs * 0.90))]
         values = [self.starter_learning_rate,
                   self.starter_learning_rate * 1.0e-1,
                   self.starter_learning_rate * 1.0e-2]
@@ -797,35 +798,32 @@ class Networks:
                     print("Validation Accuracy {:.5f}".format(validation_accuracy))
                     print("=" * 90)
 
-    def test(self):
+    def test(self, postfix):
         print("=" * 90)
         print("Testing")
         print("=" * 90)
 
         self.is_server = True
-        self.batch_size = 4
-        self.num_gpus = 2
+        self.batch_size = 1
+        self.num_gpus = 1
         self.num_workers = 20
         self.data_type = "images"
         self.dataset_name = "ucf101"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
-        self.temporal_width = 250
+        self.temporal_width = 32
         self.dtype = tf.float32
-        self.dformat = "NCDHW"
+        self.dformat = "NDHWC"
 
-        if self.data_type == "images":
-            self.model_name = "UCF_RGB"
-        elif self.data_type == "flows":
-            self.model_name = "UCF_Flow"
+        self.model_name = "I3D"
         self.train_date = "1112"
 
         self.validation_batch_size = self.batch_size
         self.validation_temporal_width = self.temporal_width
         self.validation_display_term = 1
 
-        self.dataset = self.Dataset(self)
+        self.dataset = self.FinetuningDataset(self)
 
         self.validation_data = self.dataset.getDataset("test")
         self.validation_iterator = self.validation_data.tf_dataset.make_initializable_iterator()
@@ -834,13 +832,15 @@ class Networks:
         self.load_ckpt_file_path = \
             os.path.join(self.dataset.root_path,
                          "networks", "weights",
-                         "restore",
-                         "{}_{}_{}_{}".format(self.model_name, self.dataset_name,
-                                              self.dataset_split, self.train_date),
-                         "weights.ckpt-{}".format(16))
+                         "save", "{}_{}_{}_{}_{}".format(self.model_name,
+                                                         self.dataset_name.upper(),
+                                                         "RGB" if self.data_type == "images" else "Flow",
+                                                         "Finetuning",
+                                                         "0116_with_speed"),
+                         "weights.ckpt-{}".format(100))
 
-        self.i3d = self.I3D(self, is_training=False, data_type=self.data_type)
-        self.i3d.build_model()
+        self.model = self.Model(self, is_training=False, phase="finetuning", data_type=self.data_type)
+        self.model.build_model()
 
         os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join([str(device_id) for device_id in range(self.num_gpus)])
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -865,44 +865,35 @@ class Networks:
 
             while True:
                 try:
-                    frame_vectors, target_vectors, identities = session.run(self.validation_next_element)
+                    frame_vectors, target_vectors = session.run(self.validation_next_element)
                 except tf.errors.OutOfRangeError:
                     break
 
-                valid_length = len(frame_vectors)
-                if valid_length < self.batch_size * self.num_gpus:
-                    frame_vectors = \
-                        np.concatenate([frame_vectors,
-                                        np.repeat(np.zeros_like(frame_vectors[0:1]),
-                                                  self.batch_size * self.num_gpus - valid_length, axis=0)],
-                                       axis=0)
-                    target_vectors = \
-                        np.concatenate([target_vectors,
-                                        np.repeat(np.zeros_like(target_vectors[0:1]),
-                                                self.batch_size * self.num_gpus - valid_length, axis=0)],
-                                       axis=0)
+                frame_vectors = np.squeeze(frame_vectors, axis=0)
+                target_vectors = np.squeeze(target_vectors, axis=0)
 
-                loss, accuracy, predictions = \
-                    session.run(
-                        [self.i3d.loss,
-                         self.i3d.accuracy,
-                         self.i3d.predictions],
-                        feed_dict={self.i3d.frames: frame_vectors,
-                                   self.i3d.targets: target_vectors})
+                this_loss = 0
+                this_predictions = list()
+                for this_frame_vectors in frame_vectors:
+                    loss, predictions = \
+                        session.run(
+                            [self.model.loss, self.model.predictions],
+                            feed_dict={self.model.frames: [this_frame_vectors],
+                                       self.model.targets: [target_vectors]})
 
-                predictions = predictions[:valid_length]
-                target_vectors = target_vectors[:valid_length]
-                accuracy = \
-                    np.sum(np.array(np.equal(np.argmax(predictions, axis=-1), target_vectors),
-                                     dtype=np.float32))
+                    this_loss += loss
+                    this_predictions.append(np.squeeze(predictions, axis=0))
 
-                validation_loss += loss
-                validation_accuracy += accuracy
-                validation_accuracy_count += valid_length
+                avg_predictions = np.mean(this_predictions, axis=0)
+                this_accuracy = np.array(target_vectors == np.argmax(avg_predictions, axis=-1), dtype=np.float32)
+
+                validation_loss += this_loss
+                validation_accuracy += this_accuracy
+                validation_accuracy_count += 1
 
                 if (validation_batch_index + 1) % self.validation_display_term == 0:
-                    predictions = np.argmax(predictions, axis=-1)
-                    targets = target_vectors
+                    predictions = np.argmax([avg_predictions], axis=-1)
+                    targets = [target_vectors]
 
                     if len(predictions) < 3:
                         show_indices = list(range(0, len(predictions), 1))
@@ -927,7 +918,7 @@ class Networks:
                         "Expected({:03d}): {:<32s}|Prediction({:03d}): {:<32s}".format(
                             "Epochs", 1, "Batch Iterations",
                             validation_batch_index + 1, loop_rounds,
-                            "Loss", loss, accuracy / valid_length,
+                            "Loss", loss, validation_accuracy / validation_accuracy_count,
                             "VALIDATION",
                             show_indices[0] + 1, target_labels[0],
                             show_indices[0] + 1, prediction_labels[0],
@@ -3906,4 +3897,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain(postfix=args.postfix)
+    networks.finetune(postfix=args.postfix)
