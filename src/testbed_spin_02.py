@@ -1813,7 +1813,7 @@ class Networks:
                         image_01 = np.multiply(np.subtract(image_01, 0.5), 2.0)
 
                         image_02 = np.asarray(image_02)
-                        image_02 = image.astype(np.float32)
+                        image_02 = image_02.astype(np.float32)
                         image_02 = np.divide(image_02, 255.0)
                         image_02 = np.multiply(np.subtract(image_02, 0.5), 2.0)
 
@@ -1978,7 +1978,6 @@ class Networks:
 
                 is_flip = np.random.choice([True, False], 1)
 
-                frames = list()
                 rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
                 rot_index_01 = random.choice(range(len(rot_degrees)))
                 cum_rot_degree_01 = int(np.random.uniform(low=0, high=360))
@@ -2025,7 +2024,7 @@ class Networks:
                         image_01 = np.multiply(np.subtract(image_01, 0.5), 2.0)
 
                         image_02 = np.asarray(image_02)
-                        image_02 = image.astype(np.float32)
+                        image_02 = image_02.astype(np.float32)
                         image_02 = np.divide(image_02, 255.0)
                         image_02 = np.multiply(np.subtract(image_02, 0.5), 2.0)
 
