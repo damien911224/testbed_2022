@@ -109,9 +109,9 @@ class Networks:
                                                     momentum=0.9)
 
         self.model = self.Model(self, is_training=True, phase="pretraining",
-                                data_type=self.data_type, num_classes=4 + 7)
+                                data_type=self.data_type, num_classes=7)
         self.model_validation = self.Model(self, is_training=False, phase="pretraining",
-                                           data_type=self.data_type, num_classes=4 + 7)
+                                           data_type=self.data_type, num_classes=7)
         self.model.build_model()
         self.model_validation.build_model()
 
