@@ -3210,14 +3210,15 @@ class Networks:
                                 loss = self.rotation_gamma * rotation_loss + self.contrast_gamma * contrast_loss
                                 self.loss += loss
 
-                                inputs = tf.stack(tf.split(inputs, 2, axis=0), axis=-1)
                                 rotation_cams_01 = \
-                                    tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits_01), inputs[..., 0])[0], 0.0)
+                                    tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits_01), inputs)[0], 0.0)
                                 rotation_cams_02 = \
-                                    tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits_02), inputs[..., 1])[0], 0.0)
+                                    tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits_02), inputs)[0], 0.0)
+                                rotation_cams_01 = tf.stack(tf.split(rotation_cams_01, 2, axis=0), axis=-1)[..., 0]
                                 rotation_cams_01 = tf.reduce_sum(rotation_cams_01, axis=-1)
                                 rotation_cams_01 -= tf.reduce_min(rotation_cams_01, axis=(2, 3), keepdims=True)
                                 rotation_cams_01 /= tf.reduce_max(rotation_cams_01, axis=(2, 3), keepdims=True) + 1.0e-7
+                                rotation_cams_02 = tf.stack(tf.split(rotation_cams_02, 2, axis=0), axis=-1)[..., 1]
                                 rotation_cams_02 = tf.reduce_sum(rotation_cams_02, axis=-1)
                                 rotation_cams_02 -= tf.reduce_min(rotation_cams_02, axis=(2, 3), keepdims=True)
                                 rotation_cams_02 /= tf.reduce_max(rotation_cams_02, axis=(2, 3), keepdims=True) + 1.0e-7
