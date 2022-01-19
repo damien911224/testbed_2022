@@ -145,7 +145,7 @@ class Networks:
             self.rotation_loss_summary_ph = tf.placeholder(dtype=tf.float32)
             self.rotation_loss_summary = tf.summary.scalar("rotation_loss", self.rotation_loss_summary_ph)
             self.contrast_loss_summary_ph = tf.placeholder(dtype=tf.float32)
-            self.contrast_loss_summary = tf.summary.scalar("contrast_loss", self.rotation_loss_summary_ph)
+            self.contrast_loss_summary = tf.summary.scalar("contrast_loss", self.contrast_loss_summary_ph)
             self.rotation_accuracy_summary_ph = tf.placeholder(dtype=tf.float32)
             self.rotation_accuracy_summary = tf.summary.scalar("rotation_accuracy", self.rotation_accuracy_summary_ph)
             self.current_learning_rate_ph = tf.placeholder(dtype=tf.float32)

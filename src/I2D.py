@@ -33,7 +33,7 @@ def build_model(inputs, weight_decay, end_points, dtype, dformat, is_training, s
             #                          regularizer=bias_regularizer,
             #                          trainable=is_training)
             out = tf.nn.conv3d(inputs, kernel,
-                                [1, 1, 2, 2, 1] if dformat == 'NDHWC' else [1, 1, 1, 2, 2],
+                                [1, 2, 2, 2, 1] if dformat == 'NDHWC' else [1, 1, 2, 2, 2],
                                 padding='SAME', data_format=dformat)
             # out = tf.add(out, biases)
             bn = tf.layers.batch_normalization(out,
