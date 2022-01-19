@@ -109,9 +109,9 @@ class Networks:
                                                     momentum=0.9)
 
         self.model = self.Model(self, is_training=True, phase="pretraining",
-                                data_type=self.data_type, num_classes=4 + 7)
+                                data_type=self.data_type, num_classes=4 + 4)
         self.model_validation = self.Model(self, is_training=False, phase="pretraining",
-                                           data_type=self.data_type, num_classes=4 + 7)
+                                           data_type=self.data_type, num_classes=4 + 4)
         self.model.build_model()
         self.model_validation.build_model()
 
@@ -196,8 +196,8 @@ class Networks:
 
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
         speed_labels = ["Slow", "Normal", "Fast", "Faster"]
-        # rotation_labels = ["0", "90", "180", "270"]
-        rotation_labels = ["-8", "-4", "-2", "0", "2", "4", "8"]
+        rotation_labels = ["0", "90", "180", "270"]
+        # rotation_labels = ["-8", "-4", "-2", "0", "2", "4", "8"]
 
         with tf.Session() as session:
             session.run(self.train_iterator.initializer)
