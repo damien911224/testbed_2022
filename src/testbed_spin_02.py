@@ -2010,19 +2010,25 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        image = image.crop((self.dataset.networks.input_size[1] // 2,
-                                            self.dataset.networks.input_size[0] // 2,
-                                            self.dataset.networks.input_size[1] // 2 +
-                                            self.dataset.networks.input_size[1],
-                                            self.dataset.networks.input_size[0] // 2 +
-                                            self.dataset.networks.input_size[0]))
-
                         image = rand_aug(image)
 
                         cum_rot_degree_01 += rot_degrees[rot_index_01]
                         image_01 = image.rotate(cum_rot_degree_01)
                         cum_rot_degree_02 += rot_degrees[rot_index_02]
                         image_02 = image.rotate(cum_rot_degree_02)
+
+                        image_01 = image_01.crop((self.dataset.networks.input_size[1] // 2,
+                                                  self.dataset.networks.input_size[0] // 2,
+                                                  self.dataset.networks.input_size[1] // 2 +
+                                                  self.dataset.networks.input_size[1],
+                                                  self.dataset.networks.input_size[0] // 2 +
+                                                  self.dataset.networks.input_size[0]))
+                        image_02 = image_02.crop((self.dataset.networks.input_size[1] // 2,
+                                                  self.dataset.networks.input_size[0] // 2,
+                                                  self.dataset.networks.input_size[1] // 2 +
+                                                  self.dataset.networks.input_size[1],
+                                                  self.dataset.networks.input_size[0] // 2 +
+                                                  self.dataset.networks.input_size[0]))
 
                         image_01 = np.asarray(image_01)
                         image_01 = image_01.astype(np.float32)
