@@ -18,7 +18,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (112, 112, 3)
+        self.input_size = (128, 128, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -3053,6 +3053,7 @@ class Networks:
                                                       dformat=self.networks.dformat,
                                                       is_training=self.is_training,
                                                       scope=self.i3d_name)
+
                             if self.phase == "pretraining":
                                 encoder_net = tf.identity(net)
 
@@ -3099,6 +3100,8 @@ class Networks:
                                         net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
                                                            data_format=self.networks.dformat)
                                         net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
+
+                                        Z = tf.identity(net)
 
                                 end_point = "RotationLogits"
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
@@ -3166,7 +3169,7 @@ class Networks:
 
                                         P = tf.squeeze(net, axis=(1, 2, 3))
 
-                                Z = tf.squeeze(tf.identity(net), axis=(1, 2, 3))
+                                Z = tf.squeeze(Z, axis=(1, 2, 3))
                                 Z = tf.stack(tf.split(Z, 2, axis=0), axis=-1)
                                 z_01 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 0]), axis=-1)
                                 z_02 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 1]), axis=-1)
@@ -3185,13 +3188,12 @@ class Networks:
                                 rotation_logits_02 = rotation_logits[..., 1]
                                 self.rotation_predictions.append(tf.nn.softmax(rotation_logits_01, axis=-1))
                                 self.rotation_accuracy += \
-                                    tf.reduce_mean(
-                                        tf.cast(
-                                            tf.equal(
-                                                tf.argmax(self.rotation_predictions[-1],
-                                                          axis=-1),
-                                                targets[..., 0]),
-                                            self.networks.dtype))
+                                    (tf.reduce_mean(
+                                        tf.cast(tf.equal(tf.argmax(rotation_logits_01, axis=-1), targets[..., 0]),
+                                                self.networks.dtype)) +
+                                     tf.reduce_mean(
+                                        tf.cast(tf.equal(tf.argmax(rotation_logits_02, axis=-1), targets[..., 1]),
+                                                self.networks.dtype))) / 2.0
 
                                 rotation_loss_01 = \
                                     tf.reduce_mean(
@@ -3206,10 +3208,11 @@ class Networks:
                                 loss = self.rotation_gamma * rotation_loss + self.contrast_gamma * contrast_loss
                                 self.loss += loss
 
+                                inputs = tf.stack(tf.split(inputs, 2, axis=0), axis=-1)
                                 rotation_cams_01 = \
-                                    tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits_01), inputs)[0], 0.0)
+                                    tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits_01), inputs[..., 0])[0], 0.0)
                                 rotation_cams_02 = \
-                                    tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits_02), inputs)[0], 0.0)
+                                    tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits_02), inputs[..., 1])[0], 0.0)
                                 rotation_cams_01 = tf.reduce_sum(rotation_cams_01, axis=-1)
                                 rotation_cams_01 -= tf.reduce_min(rotation_cams_01, axis=(2, 3), keepdims=True)
                                 rotation_cams_01 /= tf.reduce_max(rotation_cams_01, axis=(2, 3), keepdims=True) + 1.0e-7
@@ -3314,12 +3317,9 @@ class Networks:
                 self.loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                 if self.phase == "pretraining":
                     self.rotation_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
-                    self.rotation_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
-                    self.speed_accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
+                    self.contrast_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.rotation_accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
-                    self.speed_cams = tf.concat(self.speed_cams, axis=0)
                     self.rotation_cams = tf.concat(self.rotation_cams, axis=0)
-                    self.speed_predictions = tf.concat(self.speed_predictions, axis=0)
                     self.rotation_predictions = tf.concat(self.rotation_predictions, axis=0)
                 else:
                     self.accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)

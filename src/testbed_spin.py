@@ -3109,7 +3109,7 @@ class Networks:
                                 inputs = self.frames
                             end_point = "Encoder"
                             with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-                                net = I2D.build_model(inputs=inputs,
+                                net = I3D.build_model(inputs=inputs,
                                                       weight_decay=self.weight_decay,
                                                       end_points=self.end_points,
                                                       dtype=self.networks.dtype,
