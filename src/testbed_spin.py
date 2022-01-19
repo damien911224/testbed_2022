@@ -35,8 +35,8 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            self.epochs = 60
-            # self.epochs = 120
+            # self.epochs = 60
+            self.epochs = 120
         elif self.dataset_name == "kinetics":
             self.epochs = 10
         self.temporal_width = 16
@@ -1815,13 +1815,13 @@ class Networks:
 
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
-                # rot_degrees = [0, 90, 180, 270]
+                # rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
+                rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                # cum_rot_degree = int(np.random.uniform(low=0, high=360))
                 # cum_rot_degree = random.choice(rot_degrees)
-                # cum_rot_degree = rot_degrees[rot_index]
+                cum_rot_degree = rot_degrees[rot_index]
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
 
@@ -1852,7 +1852,7 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        cum_rot_degree += rot_degrees[rot_index]
+                        # cum_rot_degree += rot_degrees[rot_index]
                         image = image.rotate(cum_rot_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
@@ -2035,13 +2035,13 @@ class Networks:
 
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
-                # rot_degrees = [0, 90, 180, 270]
+                # rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
+                rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                # cum_rot_degree = int(np.random.uniform(low=0, high=360))
                 # cum_rot_degree = random.choice(rot_degrees)
-                # cum_rot_degree = rot_degrees[rot_index]
+                cum_rot_degree = rot_degrees[rot_index]
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
 
@@ -2072,7 +2072,7 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        cum_rot_degree += rot_degrees[rot_index]
+                        # cum_rot_degree += rot_degrees[rot_index]
                         image = image.rotate(cum_rot_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
@@ -4011,4 +4011,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.test(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)
