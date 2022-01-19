@@ -3037,8 +3037,11 @@ class Networks:
                             if self.batch_size is not None:
                                 inputs = self.frames[self.batch_size * device_id:
                                                      self.batch_size * (device_id + 1)]
+                                targets = self.targets[self.batch_size * device_id:
+                                                       self.batch_size * (device_id + 1)]
                             else:
                                 inputs = self.frames
+                                targets = self.targets
 
                             if self.phase == "pretraining":
                                 inputs = tf.concat(tf.split(inputs, 2, axis=-1), axis=0)
@@ -3270,38 +3273,17 @@ class Networks:
                                                      if self.networks.dformat == "NDHWC"
                                                      else [2, 3, 4])
 
-                                if self.batch_size is not None:
-                                    targets = self.targets[
-                                              self.batch_size * device_id:
-                                              self.batch_size * (device_id + 1)]
-                                else:
-                                    targets = self.targets
-
                                 self.predictions.append(tf.nn.softmax(net, axis=-1))
 
-                                if self.batch_size is not None:
-                                    targets = self.targets[
-                                              self.batch_size * device_id:
-                                              self.batch_size * (device_id + 1)]
-                                else:
-                                    targets = self.targets
-
                                 self.accuracy += \
-                                    tf.reduce_mean(
-                                        tf.cast(
-                                            tf.equal(
-                                                tf.argmax(self.predictions[-1],
-                                                          axis=-1),
-                                                targets),
-                                            self.networks.dtype))
+                                    tf.reduce_mean(tf.cast(tf.equal(tf.argmax(net, axis=-1), targets),
+                                                           self.networks.dtype))
 
                                 loss = \
                                     tf.reduce_mean(
                                         tf.nn.sparse_softmax_cross_entropy_with_logits(
                                             labels=targets,
-                                            logits=net
-                                        )
-                                    )
+                                            logits=net))
                                 self.loss += loss
 
                         if self.is_training:
