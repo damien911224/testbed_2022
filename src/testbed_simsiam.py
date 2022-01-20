@@ -2689,7 +2689,7 @@ class Networks:
                 validation_dataset = validation_dataset.prefetch(5 * batch_size)
                 validation_dataset = validation_dataset.map(lambda video:
                                                             tf.py_func(self.sample,
-                                                                       [video], [tf.float32, tf.int64, tf.string]),
+                                                                       [video], [tf.float32, tf.int64]),
                                                             num_parallel_calls=self.dataset.networks.num_workers)
                 validation_dataset = validation_dataset.batch(batch_size)
                 validation_dataset = validation_dataset.prefetch(5)
@@ -2702,96 +2702,93 @@ class Networks:
                 frame_length = int(splits[1])
                 class_index = int(splits[2])
 
-                if self.dataset.networks.temporal_width > 0:
-                    target_frames = list()
-                    if frame_length >= self.dataset.networks.validation_temporal_width:
-                        start_index = 1 + (frame_length - self.dataset.networks.validation_temporal_width) // 2
-                        end_index = start_index + self.dataset.networks.validation_temporal_width - 1
-                        target_frames = list(range(start_index, end_index + 1, 1))
-                    else:
-                        frame_index = 0
-                        while True:
-                            sampled_frame = 1 + (frame_index % frame_length)
-                            target_frames.append(sampled_frame)
-                            frame_index += 1
-                            if frame_index >= self.dataset.networks.validation_temporal_width:
-                                break
-                else:
-                    target_frames = range(1, frame_length + 1, 1)
+                target_frames = list()
+                start_indices = np.linspace(0, frame_length - self.dataset.networks.temporal_width, 8, dtype=np.int64)
+                start_indices = np.unique(start_indices)
+                for start_index in start_indices:
+                    this_frames = list()
+                    frame_index = 0
+                    while True:
+                        sampled_frame = 1 + (start_index + math.floor(frame_index)) % frame_length
+                        this_frames.append(sampled_frame)
+                        frame_index += 1
+                        if frame_index >= self.dataset.networks.temporal_width:
+                            break
+
+                    target_frames.append(this_frames)
 
                 one_frame = cv2.imread(os.path.join(self.dataset.frames_folder, identity, "images", "img_00001.jpg"))
 
                 height, width, _ = one_frame.shape
 
                 frame_vectors = list()
-                for sampled_frame in target_frames:
-                    if self.dataset.networks.data_type == "images":
-                        if sampled_frame < 1 or sampled_frame > frame_length:
-                            image = np.zeros(dtype=np.float32,
-                                             shape=(self.dataset.networks.input_size[1],
-                                                    self.dataset.networks.input_size[0],
-                                                    3))
-                        else:
-                            image_path = os.path.join(self.dataset.frames_folder, identity,
-                                                      "{}_{:05d}.jpg".format(self.dataset.prefix, sampled_frame))
-                            image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-                            total_crop_height = (height - self.dataset.networks.input_size[1])
-                            crop_top = total_crop_height // 2
-                            total_crop_width = (width - self.dataset.networks.input_size[0])
-                            crop_left = total_crop_width // 2
-                            image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
-                                    crop_left:crop_left + self.dataset.networks.input_size[0], :]
-                            image = image.astype(np.float32)
-                            image = np.divide(image, 255.0)
-                            image = np.multiply(np.subtract(image, 0.5), 2.0)
+                for this_target_frames in target_frames:
+                    this_frame_vectors = list()
+                    for sampled_frame in this_target_frames:
+                        if self.dataset.networks.data_type == "images":
+                            if sampled_frame < 1 or sampled_frame > frame_length:
+                                image = np.zeros(dtype=np.float32,
+                                                 shape=(self.dataset.networks.input_size[1],
+                                                        self.dataset.networks.input_size[0],
+                                                        3))
+                            else:
+                                image_path = os.path.join(self.dataset.frames_folder, identity,
+                                                          "{}_{:05d}.jpg".format(self.dataset.prefix, sampled_frame))
+                                image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
+                                total_crop_height = (height - self.dataset.networks.input_size[1])
+                                crop_top = total_crop_height // 2
+                                total_crop_width = (width - self.dataset.networks.input_size[0])
+                                crop_left = total_crop_width // 2
+                                image = image[crop_top:crop_top + self.dataset.networks.input_size[1],
+                                        crop_left:crop_left + self.dataset.networks.input_size[0], :]
+                                image = image.astype(np.float32)
+                                image = np.divide(image, 255.0)
+                                image = np.multiply(np.subtract(image, 0.5), 2.0)
 
-                        frame_vectors.append(image)
-                    elif self.dataset.networks.data_type == "flows":
-                        if sampled_frame < 1 or sampled_frame > frame_length:
-                            flow = np.zeros(dtype=np.float32,
-                                            shape=(self.dataset.networks.input_size[1],
-                                                   self.dataset.networks.input_size[0],
-                                                   2))
-                        else:
-                            flow_x_path = os.path.join(self.dataset.frames_folder, identity,
-                                                       "{}_x_{:05d}.jpg".format(self.dataset.prefix, sampled_frame))
-                            flow_x = cv2.imread(flow_x_path, cv2.IMREAD_GRAYSCALE)
-
-                            flow_y_path = os.path.join(self.dataset.frames_folder, identity,
-                                                       "{}_y_{:05d}.jpg".format(self.dataset.prefix,
-                                                                                sampled_frame))
-                            flow_y = cv2.imread(flow_y_path, cv2.IMREAD_GRAYSCALE)
-
-                            if flow_x is None or flow_y is None:
-                                # print("No Flow {} {:05d}".format(identity, sampled_frame))
-
+                            this_frame_vectors.append(image)
+                        elif self.dataset.networks.data_type == "flows":
+                            if sampled_frame < 1 or sampled_frame > frame_length:
                                 flow = np.zeros(dtype=np.float32,
                                                 shape=(self.dataset.networks.input_size[1],
                                                        self.dataset.networks.input_size[0],
                                                        2))
                             else:
-                                flow = np.stack([flow_x, flow_y], axis=-1)
+                                flow_x_path = os.path.join(self.dataset.frames_folder, identity,
+                                                           "{}_x_{:05d}.jpg".format(self.dataset.prefix, sampled_frame))
+                                flow_x = cv2.imread(flow_x_path, cv2.IMREAD_GRAYSCALE)
 
-                                total_crop_height = (height - self.dataset.networks.input_size[1])
-                                crop_top = total_crop_height // 2
-                                total_crop_width = (width - self.dataset.networks.input_size[0])
-                                crop_left = total_crop_width // 2
-                                flow = flow[crop_top:crop_top + self.dataset.networks.input_size[1],
-                                       crop_left:crop_left + self.dataset.networks.input_size[0], :]
-                                flow = flow.astype(np.float32)
-                                flow = np.divide(flow, 255.0)
-                                flow = np.multiply(np.subtract(flow, 0.5), 2.0)
+                                flow_y_path = os.path.join(self.dataset.frames_folder, identity,
+                                                           "{}_y_{:05d}.jpg".format(self.dataset.prefix,
+                                                                                    sampled_frame))
+                                flow_y = cv2.imread(flow_y_path, cv2.IMREAD_GRAYSCALE)
 
-                        frame_vectors.append(flow)
+                                if flow_x is None or flow_y is None:
+                                    # print("No Flow {} {:05d}".format(identity, sampled_frame))
 
-                identities = [identity] * len(frame_vectors)
+                                    flow = np.zeros(dtype=np.float32,
+                                                    shape=(self.dataset.networks.input_size[1],
+                                                           self.dataset.networks.input_size[0],
+                                                           2))
+                                else:
+                                    flow = np.stack([flow_x, flow_y], axis=-1)
 
-                if self.dataset.networks.dformat == "NCDHW":
-                    frame_vectors = np.transpose(frame_vectors, [3, 0, 1, 2])
+                                    total_crop_height = (height - self.dataset.networks.input_size[1])
+                                    crop_top = total_crop_height // 2
+                                    total_crop_width = (width - self.dataset.networks.input_size[0])
+                                    crop_left = total_crop_width // 2
+                                    flow = flow[crop_top:crop_top + self.dataset.networks.input_size[1],
+                                           crop_left:crop_left + self.dataset.networks.input_size[0], :]
+                                    flow = flow.astype(np.float32)
+                                    flow = np.divide(flow, 255.0)
+                                    flow = np.multiply(np.subtract(flow, 0.5), 2.0)
+
+                            this_frame_vectors.append(flow)
+                    frame_vectors.append(this_frame_vectors)
 
                 target = np.array(class_index, dtype=np.int64)
+                frame_vectors = np.stack(frame_vectors, axis=0)
 
-                return frame_vectors, target, identities
+                return frame_vectors, target
 
             def preprocessing(self, batch_datum):
                 splits = tf.string_split([batch_datum], delimiter=" ").values
