@@ -2192,9 +2192,13 @@ class Networks:
 
             self.meta_folder = os.path.join(self.root_path, "meta")
             if self.networks.dataset_name == "ucf101":
-                self.dataset_folder = os.path.join("/mnt/hdd0/UCF101")
+                self.dataset_folder = os.path.join("/mnt/hdd1/UCF101")
                 self.target_path = os.path.join(self.meta_folder, "ucf101.json")
                 self.class_label_path = os.path.join(self.meta_folder, "ucf101_classes.txt")
+            elif self.networks.dataset_name == "hmdb51":
+                self.dataset_folder = os.path.join("/mnt/hdd1/HMDB51")
+                self.target_path = os.path.join(self.meta_folder, "hmdb51.json")
+                self.class_label_path = os.path.join(self.meta_folder, "hmdb51_classes.txt")
             elif self.networks.dataset_name == "activitynet":
                 self.dataset_folder = os.path.join("/mnt/hdd0/ActivityNet/v1.3")
                 self.target_path = os.path.join(self.meta_folder, "activity_net.v1.3.min.json")
@@ -2272,6 +2276,16 @@ class Networks:
                     else:
                         json_file_path = os.path.join(self.dataset.meta_folder,
                                                       "ucf101_{}_{}_training_data.json".format(
+                                                          "adaptive",
+                                                          self.dataset.networks.dataset_split))
+                elif self.dataset.networks.dataset_name == "hmdb51":
+                    if self.dataset.video_fps >= 25.0:
+                        json_file_path = os.path.join(self.dataset.meta_folder,
+                                                      "hmdb51_{}_training_data.json".format(
+                                                          self.dataset.networks.dataset_split))
+                    else:
+                        json_file_path = os.path.join(self.dataset.meta_folder,
+                                                      "hmdb51_{}_{}_training_data.json".format(
                                                           "adaptive",
                                                           self.dataset.networks.dataset_split))
                 elif self.dataset.networks.dataset_name == "activitynet":
@@ -2455,6 +2469,16 @@ class Networks:
                     else:
                         json_file_path = os.path.join(self.dataset.meta_folder,
                                                       "ucf101_{}_{}_validation_data.json".format(
+                                                          "adaptive",
+                                                          self.dataset.networks.dataset_split))
+                elif self.dataset.networks.dataset_name == "hmdb51":
+                    if self.dataset.video_fps >= 25.0:
+                        json_file_path = os.path.join(self.dataset.meta_folder,
+                                                      "hmdb51_{}_validation_data.json".format(
+                                                          self.dataset.networks.dataset_split))
+                    else:
+                        json_file_path = os.path.join(self.dataset.meta_folder,
+                                                      "hmdb51_{}_{}_validation_data.json".format(
                                                           "adaptive",
                                                           self.dataset.networks.dataset_split))
                 elif self.dataset.networks.dataset_name == "activitynet":
@@ -2643,6 +2667,16 @@ class Networks:
                     else:
                         json_file_path = os.path.join(self.dataset.meta_folder,
                                                       "ucf101_{}_{}_validation_data.json".format(
+                                                          int(self.dataset.video_fps),
+                                                          self.dataset.networks.dataset_split))
+                elif self.dataset.networks.dataset_name == "hmdb51":
+                    if self.dataset.video_fps >= 25.0:
+                        json_file_path = os.path.join(self.dataset.meta_folder,
+                                                      "hmdb51_{}_validation_data.json".format(
+                                                          self.dataset.networks.dataset_split))
+                    else:
+                        json_file_path = os.path.join(self.dataset.meta_folder,
+                                                      "hmdb51_{}_{}_validation_data.json".format(
                                                           int(self.dataset.video_fps),
                                                           self.dataset.networks.dataset_split))
                 elif self.dataset.networks.dataset_name == "activitynet":
