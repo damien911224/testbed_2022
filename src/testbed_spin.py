@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (224, 224, 3)
+        self.input_size = (128, 128, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -37,8 +37,8 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            # self.epochs = 60
-            self.epochs = 120
+            self.epochs = 60
+            # self.epochs = 120
         elif self.dataset_name == "kinetics":
             self.epochs = 10
         self.temporal_width = 16
@@ -1628,7 +1628,7 @@ class Networks:
 
             self.meta_folder = os.path.join(self.root_path, "meta")
             if self.networks.dataset_name == "ucf101":
-                self.dataset_folder = os.path.join("/mnt/hdd1/UCF101")
+                self.dataset_folder = os.path.join("/mnt/hdd0/UCF101")
                 self.target_path = os.path.join(self.meta_folder, "ucf101.json")
                 self.class_label_path = os.path.join(self.meta_folder, "ucf101_classes.txt")
             elif self.networks.dataset_name == "kinetics":
@@ -3143,7 +3143,7 @@ class Networks:
                                 inputs = self.frames
                             end_point = "Encoder"
                             with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-                                net = I3D.build_model(inputs=inputs,
+                                net = S3D.build_model(inputs=inputs,
                                                       weight_decay=self.weight_decay,
                                                       end_points=self.end_points,
                                                       dtype=self.networks.dtype,
@@ -4045,4 +4045,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.finetune(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)

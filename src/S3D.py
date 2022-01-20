@@ -1,5 +1,4 @@
 import tensorflow as tf
-import os
 
 
 def build_model(inputs, weight_decay, end_points, dtype, dformat, is_training, scope):
@@ -9,8 +8,8 @@ def build_model(inputs, weight_decay, end_points, dtype, dformat, is_training, s
 
     kernel_initializer = tf.contrib.layers.variance_scaling_initializer()
     kernel_regularizer = tf.contrib.layers.l2_regularizer(weight_decay)
-    # bias_initilizer = tf.zeros_initializer()
-    # bias_regularizer = tf.contrib.layers.l2_regularizer(weight_decay)
+    bias_initilizer = tf.zeros_initializer()
+    bias_regularizer = None
 
     activation_funtion = tf.nn.relu
 
@@ -81,6 +80,27 @@ def build_model(inputs, weight_decay, end_points, dtype, dformat, is_training, s
                                                training=is_training,
                                                trainable=is_training)
             net = activation_funtion(bn)
+
+            with tf.variable_scope("Attention", reuse=tf.AUTO_REUSE):
+                pooled = tf.reduce_mean(net, axis=(1, 2, 3), keepdims=True)
+                kernel = tf.get_variable(name='kernel',
+                                         dtype=dtype,
+                                         shape=[1, 1, 1,
+                                                pooled.get_shape()[-1], pooled.get_shape()[-1]],
+                                         initializer=kernel_initializer,
+                                         regularizer=kernel_regularizer,
+                                         trainable=is_training)
+                weights = tf.nn.conv3d(pooled, kernel, [1, 1, 1, 1, 1], padding="SAME")
+                biases = tf.get_variable(name='conv_3d/bias',
+                                         dtype=dtype,
+                                         shape=[pooled.get_shape()[-1]],
+                                         initializer=bias_initilizer,
+                                         regularizer=bias_regularizer,
+                                         trainable=is_training)
+                weights = tf.nn.bias_add(weights, biases)
+                weights = tf.nn.sigmoid(weights)
+
+                net = tf.multiply(net, weights)
         try:
             end_points[end_point] = \
                 tf.concat([end_points[end_point], net], axis=0)
@@ -195,6 +215,27 @@ def build_model(inputs, weight_decay, end_points, dtype, dformat, is_training, s
                                                training=is_training,
                                                trainable=is_training)
             net = activation_funtion(bn)
+
+            with tf.variable_scope("Attention", reuse=tf.AUTO_REUSE):
+                pooled = tf.reduce_mean(net, axis=(1, 2, 3), keepdims=True)
+                kernel = tf.get_variable(name='kernel',
+                                         dtype=dtype,
+                                         shape=[1, 1, 1,
+                                                pooled.get_shape()[-1], pooled.get_shape()[-1]],
+                                         initializer=kernel_initializer,
+                                         regularizer=kernel_regularizer,
+                                         trainable=is_training)
+                weights = tf.nn.conv3d(pooled, kernel, [1, 1, 1, 1, 1], padding="SAME")
+                biases = tf.get_variable(name='conv_3d/bias',
+                                         dtype=dtype,
+                                         shape=[pooled.get_shape()[-1]],
+                                         initializer=bias_initilizer,
+                                         regularizer=bias_regularizer,
+                                         trainable=is_training)
+                weights = tf.nn.bias_add(weights, biases)
+                weights = tf.nn.sigmoid(weights)
+
+                net = tf.multiply(net, weights)
         try:
             end_points[end_point] = \
                 tf.concat([end_points[end_point], net], axis=0)
@@ -395,6 +436,8 @@ def inception(x, branches, is_training,
               batch_norm_epsilon=0.001,
               kernel_initializer=tf.contrib.layers.variance_scaling_initializer(),
               kernel_regularizer=tf.contrib.layers.l2_regularizer(1.0e-7),
+              bias_initilizer=tf.zeros_initializer(),
+              bias_regularizer=None,
               dtype=tf.float32, dformat='NDHWC'):
     with tf.variable_scope('Branch_0'):
         with tf.variable_scope('Conv3d_0a_1x1x1', reuse=tf.AUTO_REUSE):
@@ -518,6 +561,27 @@ def inception(x, branches, is_training,
                                                trainable=is_training)
             branch_1 = activation_funtion(bn)
 
+            with tf.variable_scope("Attention", reuse=tf.AUTO_REUSE):
+                pooled = tf.reduce_mean(branch_1, axis=(1, 2, 3), keepdims=True)
+                kernel = tf.get_variable(name='kernel',
+                                         dtype=dtype,
+                                         shape=[1, 1, 1,
+                                                pooled.get_shape()[-1], pooled.get_shape()[-1]],
+                                         initializer=kernel_initializer,
+                                         regularizer=kernel_regularizer,
+                                         trainable=is_training)
+                weights = tf.nn.conv3d(pooled, kernel, [1, 1, 1, 1, 1], padding="SAME")
+                biases = tf.get_variable(name='conv_3d/bias',
+                                         dtype=dtype,
+                                         shape=[pooled.get_shape()[-1]],
+                                         initializer=bias_initilizer,
+                                         regularizer=bias_regularizer,
+                                         trainable=is_training)
+                weights = tf.nn.bias_add(weights, biases)
+                weights = tf.nn.sigmoid(weights)
+
+                branch_1 = tf.multiply(branch_1, weights)
+
     with tf.variable_scope('Branch_2'):
         with tf.variable_scope('Conv3d_0a_1x1x1', reuse=tf.AUTO_REUSE):
             kernel = tf.get_variable(name='conv_3d/kernel',
@@ -608,6 +672,27 @@ def inception(x, branches, is_training,
                                                training=is_training,
                                                trainable=is_training)
             branch_2 = activation_funtion(bn)
+
+            with tf.variable_scope("Attention", reuse=tf.AUTO_REUSE):
+                pooled = tf.reduce_mean(branch_2, axis=(1, 2, 3), keepdims=True)
+                kernel = tf.get_variable(name='kernel',
+                                         dtype=dtype,
+                                         shape=[1, 1, 1,
+                                                pooled.get_shape()[-1], pooled.get_shape()[-1]],
+                                         initializer=kernel_initializer,
+                                         regularizer=kernel_regularizer,
+                                         trainable=is_training)
+                weights = tf.nn.conv3d(pooled, kernel, [1, 1, 1, 1, 1], padding="SAME")
+                biases = tf.get_variable(name='conv_3d/bias',
+                                         dtype=dtype,
+                                         shape=[pooled.get_shape()[-1]],
+                                         initializer=bias_initilizer,
+                                         regularizer=bias_regularizer,
+                                         trainable=is_training)
+                weights = tf.nn.bias_add(weights, biases)
+                weights = tf.nn.sigmoid(weights)
+
+                branch_2 = tf.multiply(branch_2, weights)
 
     with tf.variable_scope('Branch_3'):
         with tf.variable_scope('MaxPool_0a_3x3x3', reuse=tf.AUTO_REUSE):
