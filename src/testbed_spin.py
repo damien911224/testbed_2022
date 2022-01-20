@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (128, 128, 3)
+        self.input_size = (112, 112, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -3143,7 +3143,7 @@ class Networks:
                                 inputs = self.frames
                             end_point = "Encoder"
                             with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-                                net = S3D.build_model(inputs=inputs,
+                                net = I2D.build_model(inputs=inputs,
                                                       weight_decay=self.weight_decay,
                                                       end_points=self.end_points,
                                                       dtype=self.networks.dtype,
