@@ -3103,10 +3103,26 @@ class Networks:
                                 targets = self.targets
 
                             if self.phase == "pretraining":
-                                inputs = tf.concat(tf.split(inputs, 2, axis=-1), axis=0)
+                                x1, x2 = tf.split(inputs, 2, axis=-1)
 
-                            end_point = "Encoder"
-                            with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                end_point = "Encoder"
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    encoder_net_01 = self.encoder_model.build_model(inputs=x1,
+                                                                                    weight_decay=self.weight_decay,
+                                                                                    end_points=self.end_points,
+                                                                                    dtype=self.networks.dtype,
+                                                                                    dformat=self.networks.dformat,
+                                                                                    is_training=self.is_training,
+                                                                                    scope=self.encoder_name)
+
+                                    encoder_net_02 = self.encoder_model.build_model(inputs=x2,
+                                                                                    weight_decay=self.weight_decay,
+                                                                                    end_points=self.end_points,
+                                                                                    dtype=self.networks.dtype,
+                                                                                    dformat=self.networks.dformat,
+                                                                                    is_training=self.is_training,
+                                                                                    scope=self.encoder_name)
+                            else:
                                 net = self.encoder_model.build_model(inputs=inputs,
                                                                      weight_decay=self.weight_decay,
                                                                      end_points=self.end_points,
@@ -3116,10 +3132,8 @@ class Networks:
                                                                      scope=self.encoder_name)
 
                             if self.phase == "pretraining":
-                                encoder_net = tf.identity(net)
-
                                 end_point = "Z"
-                                net = tf.reduce_mean(encoder_net, axis=(1, 2, 3), keepdims=True)
+                                net = tf.reduce_mean(encoder_net_01, axis=(1, 2, 3), keepdims=True)
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
                                     with tf.variable_scope("Conv3d_0a_1x1x1", reuse=tf.AUTO_REUSE):
                                         kernel = tf.get_variable(name="conv_3d/kernel",
@@ -3162,7 +3176,7 @@ class Networks:
                                                            data_format=self.networks.dformat)
                                         net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
 
-                                        Z = tf.identity(net)
+                                        z1 = tf.squeeze(tf.identity(net), axis=(1, 2, 3))
 
                                 end_point = "RotationLogits"
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
@@ -3187,11 +3201,11 @@ class Networks:
                                                                  initializer=bias_initializer,
                                                                  regularizer=bias_regularizer,
                                                                  trainable=self.is_training)
-                                        rotation_logits = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
-                                                            data_format=self.networks.dformat)
-                                        rotation_logits = tf.add(rotation_logits, biases)
+                                        r1 = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                          data_format=self.networks.dformat)
+                                        r1 = tf.add(r1, biases)
 
-                                    rotation_logits = tf.squeeze(rotation_logits, axis=(1, 2, 3))
+                                    r1 = tf.squeeze(r1, axis=(1, 2, 3))
 
                                 end_point = "P"
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
@@ -3226,58 +3240,160 @@ class Networks:
                                                                  trainable=self.is_training)
                                         conv = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
                                                             data_format=self.networks.dformat)
-                                        net = tf.add(conv, biases)
+                                        p1 = tf.add(conv, biases)
 
-                                        P = tf.squeeze(net, axis=(1, 2, 3))
+                                        p1 = tf.squeeze(p1, axis=(1, 2, 3))
 
-                                Z = tf.squeeze(Z, axis=(1, 2, 3))
-                                Z = tf.stack(tf.split(Z, 2, axis=0), axis=-1)
-                                z_01 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 0]), axis=-1)
-                                z_02 = tf.math.l2_normalize(tf.stop_gradient(Z[..., 1]), axis=-1)
+                                end_point = "Z"
+                                net = tf.reduce_mean(encoder_net_02, axis=(1, 2, 3), keepdims=True)
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    with tf.variable_scope("Conv3d_0a_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1],
+                                                                        net.get_shape()[-1]],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                           data_format=self.networks.dformat)
+                                        net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
+                                        net = tf.nn.relu(net)
 
-                                P = tf.stack(tf.split(P, 2, axis=0), axis=-1)
-                                p_01 = tf.math.l2_normalize(P[..., 0], axis=-1)
-                                p_02 = tf.math.l2_normalize(P[..., 1], axis=-1)
+                                    with tf.variable_scope("Conv3d_0b_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1],
+                                                                        net.get_shape()[-1]],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                           data_format=self.networks.dformat)
+                                        net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
+                                        net = tf.nn.relu(net)
+
+                                    with tf.variable_scope("Conv3d_0c_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1],
+                                                                        net.get_shape()[-1]],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                           data_format=self.networks.dformat)
+                                        net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
+
+                                        z2 = tf.squeeze(tf.identity(net), axis=(1, 2, 3))
+
+                                end_point = "RotationLogits"
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    with tf.variable_scope("Conv3d_0c_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1]
+                                                                        if self.networks.dformat == "NDHWC"
+                                                                        else net.get_shape()[1],
+                                                                        self.num_classes],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        biases = tf.get_variable(name="conv_3d/bias",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1, 1,
+                                                                        self.num_classes]
+                                                                 if self.networks.dformat == "NDHWC"
+                                                                 else [1, self.num_classes,
+                                                                       1, 1, 1],
+                                                                 initializer=bias_initializer,
+                                                                 regularizer=bias_regularizer,
+                                                                 trainable=self.is_training)
+                                        r2 = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                          data_format=self.networks.dformat)
+                                        r2 = tf.add(r2, biases)
+
+                                    r2 = tf.squeeze(r2, axis=(1, 2, 3))
+
+                                end_point = "P"
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    with tf.variable_scope("Conv3d_0a_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1],
+                                                                        net.get_shape()[-1]],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        net = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                           data_format=self.networks.dformat)
+                                        net = tf.layers.batch_normalization(net, axis=-1, training=self.is_training)
+                                        net = tf.nn.relu(net)
+
+                                    with tf.variable_scope("Conv3d_0b_1x1x1", reuse=tf.AUTO_REUSE):
+                                        kernel = tf.get_variable(name="conv_3d/kernel",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1,
+                                                                        net.get_shape()[-1],
+                                                                        net.get_shape()[-1]],
+                                                                 initializer=kernel_initializer,
+                                                                 regularizer=kernel_regularizer,
+                                                                 trainable=self.is_training)
+                                        biases = tf.get_variable(name="conv_3d/bias",
+                                                                 dtype=self.networks.dtype,
+                                                                 shape=[1, 1, 1, 1, net.get_shape()[-1]],
+                                                                 initializer=bias_initializer,
+                                                                 regularizer=bias_regularizer,
+                                                                 trainable=self.is_training)
+                                        conv = tf.nn.conv3d(net, kernel, [1, 1, 1, 1, 1], padding="SAME",
+                                                            data_format=self.networks.dformat)
+                                        p2 = tf.add(conv, biases)
+
+                                        p2 = tf.squeeze(p2, axis=(1, 2, 3))
+
+                                z1 = tf.math.l2_normalize(tf.stop_gradient(z1), axis=-1)
+                                z2 = tf.math.l2_normalize(tf.stop_gradient(z2), axis=-1)
+
+                                p1 = tf.math.l2_normalize(p1, axis=-1)
+                                p2 = tf.math.l2_normalize(p2, axis=-1)
 
                                 contrast_loss = \
-                                    -(tf.reduce_mean(tf.reduce_sum(p_01 * z_02, axis=1), axis=0) / 2.0 +
-                                      tf.reduce_mean(tf.reduce_sum(p_02 * z_01, axis=1), axis=0) / 2.0)
+                                    -(tf.reduce_mean(tf.reduce_sum(p1 * z2, axis=1), axis=0) / 2.0 +
+                                      tf.reduce_mean(tf.reduce_sum(p2 * z1, axis=1), axis=0) / 2.0)
                                 self.contrast_loss += contrast_loss
 
-                                rotation_logits = tf.stack(tf.split(rotation_logits, 2, axis=0), axis=-1)
-                                rotation_logits_01 = rotation_logits[..., 0]
-                                rotation_logits_02 = rotation_logits[..., 1]
-                                self.rotation_predictions.append(tf.nn.softmax(rotation_logits_01, axis=-1))
+                                self.rotation_predictions.append(tf.nn.softmax(r1, axis=-1))
                                 self.rotation_accuracy += \
                                     (tf.reduce_mean(
-                                        tf.cast(tf.equal(tf.argmax(rotation_logits_01, axis=-1), targets[..., 0]),
+                                        tf.cast(tf.equal(tf.argmax(r1, axis=-1), targets[..., 0]),
                                                 self.networks.dtype)) +
                                      tf.reduce_mean(
-                                        tf.cast(tf.equal(tf.argmax(rotation_logits_02, axis=-1), targets[..., 1]),
+                                        tf.cast(tf.equal(tf.argmax(r2, axis=-1), targets[..., 1]),
                                                 self.networks.dtype))) / 2.0
 
                                 rotation_loss_01 = \
                                     tf.reduce_mean(
                                         tf.nn.sparse_softmax_cross_entropy_with_logits(
-                                            labels=targets[..., 0], logits=rotation_logits_01))
+                                            labels=targets[..., 0], logits=r1))
                                 rotation_loss_02 = \
                                     tf.reduce_mean(
                                         tf.nn.sparse_softmax_cross_entropy_with_logits(
-                                            labels=targets[..., 1], logits=rotation_logits_02))
+                                            labels=targets[..., 1], logits=r2))
                                 rotation_loss = (rotation_loss_01 + rotation_loss_02) / 2.0
                                 self.rotation_loss += rotation_loss
                                 loss = self.rotation_gamma * rotation_loss + self.contrast_gamma * contrast_loss
                                 self.loss += loss
 
-                                rotation_cams_01 = \
-                                    tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits_01), inputs)[0], 0.0)
-                                rotation_cams_02 = \
-                                    tf.maximum(tf.gradients(tf.reduce_sum(rotation_logits_02), inputs)[0], 0.0)
-                                rotation_cams_01 = tf.stack(tf.split(rotation_cams_01, 2, axis=0), axis=-1)[..., 0]
+                                rotation_cams_01 = tf.maximum(tf.gradients(tf.reduce_sum(r1), x1)[0], 0.0)
+                                rotation_cams_02 = tf.maximum(tf.gradients(tf.reduce_sum(r2), x2)[0], 0.0)
                                 rotation_cams_01 = tf.reduce_sum(rotation_cams_01, axis=-1)
                                 rotation_cams_01 -= tf.reduce_min(rotation_cams_01, axis=(2, 3), keepdims=True)
                                 rotation_cams_01 /= tf.reduce_max(rotation_cams_01, axis=(2, 3), keepdims=True) + 1.0e-7
-                                rotation_cams_02 = tf.stack(tf.split(rotation_cams_02, 2, axis=0), axis=-1)[..., 1]
                                 rotation_cams_02 = tf.reduce_sum(rotation_cams_02, axis=-1)
                                 rotation_cams_02 -= tf.reduce_min(rotation_cams_02, axis=(2, 3), keepdims=True)
                                 rotation_cams_02 /= tf.reduce_max(rotation_cams_02, axis=(2, 3), keepdims=True) + 1.0e-7
