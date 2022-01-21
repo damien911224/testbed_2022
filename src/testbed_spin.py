@@ -2339,7 +2339,7 @@ class Networks:
 
             self.meta_folder = os.path.join(self.root_path, "meta")
             if self.networks.dataset_name == "ucf101":
-                self.dataset_folder = os.path.join("/mnt/hdd1/UCF101")
+                self.dataset_folder = os.path.join("/mnt/hdd0/UCF101")
                 self.target_path = os.path.join(self.meta_folder, "ucf101.json")
                 self.class_label_path = os.path.join(self.meta_folder, "ucf101_classes.txt")
             elif self.networks.dataset_name == "hmdb51":
@@ -3143,7 +3143,7 @@ class Networks:
                                 inputs = self.frames
                             end_point = "Encoder"
                             with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-                                net = I3D.build_model(inputs=inputs,
+                                net = I2D.build_model(inputs=inputs,
                                                       weight_decay=self.weight_decay,
                                                       end_points=self.end_points,
                                                       dtype=self.networks.dtype,
@@ -4045,4 +4045,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.test(postfix=args.postfix)
+    networks.finetune(postfix=args.postfix)
