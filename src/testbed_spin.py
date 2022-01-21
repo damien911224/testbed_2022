@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (112, 112, 3)
+        self.input_size = (224, 224, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -1001,7 +1001,7 @@ class Networks:
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Finetuning",
-                                                         "0118_normal"),
+                                                         "0120_normal_longer_training"),
                          "weights.ckpt-{}".format(100))
 
         self.model = self.Model(self, is_training=False, phase="finetuning", data_type=self.data_type)
