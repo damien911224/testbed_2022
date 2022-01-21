@@ -594,8 +594,8 @@ class Networks:
                                                          "UCF101",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0119_normal_longer_training"),
-                         "weights.ckpt-{}".format(120))
+                                                         "0120_I2D"),
+                         "weights.ckpt-{}".format(60))
 
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
@@ -4045,4 +4045,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain(postfix=args.postfix)
+    networks.finetune(postfix=args.postfix)
