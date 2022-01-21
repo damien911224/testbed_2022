@@ -3068,6 +3068,15 @@ class Networks:
             self.num_gpus = self.networks.num_gpus if self.device_id is None else 1
             self.name = self.networks.model_name if name is None else name
 
+            if self.name == "I3D":
+                self.encoder_model = I3D
+            elif self.name == "S3D":
+                self.encoder_model = S3D
+            elif self.name == "I2D":
+                self.encoder_model = I2D
+            else:
+                raise ValueError("Select a correct encoder model")
+
             if self.data_type == "images":
                 self.input_size = (self.networks.input_size[0],
                                    self.networks.input_size[1],
@@ -3143,13 +3152,13 @@ class Networks:
                                 inputs = self.frames
                             end_point = "Encoder"
                             with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-                                net = I3D.build_model(inputs=inputs,
-                                                      weight_decay=self.weight_decay,
-                                                      end_points=self.end_points,
-                                                      dtype=self.networks.dtype,
-                                                      dformat=self.networks.dformat,
-                                                      is_training=self.is_training,
-                                                      scope=self.i3d_name)
+                                net = self.encoder_model.build_model(inputs=inputs,
+                                                                     weight_decay=self.weight_decay,
+                                                                     end_points=self.end_points,
+                                                                     dtype=self.networks.dtype,
+                                                                     dformat=self.networks.dformat,
+                                                                     is_training=self.is_training,
+                                                                     scope=self.i3d_name)
 
                             end_point = "Logits"
                             with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
