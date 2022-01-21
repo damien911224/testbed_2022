@@ -195,7 +195,9 @@ class Networks:
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
         rotation_labels = ["-8", "-4", "-2", "0", "2", "4", "8"]
 
-        with tf.Session() as session:
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        with tf.Session(config=config) as session:
             session.run(self.train_iterator.initializer)
 
             rmtree(self.summary_folder, ignore_errors=True)
