@@ -3123,13 +3123,14 @@ class Networks:
                                                                                     is_training=self.is_training,
                                                                                     scope=self.encoder_name)
                             else:
-                                net = self.encoder_model.build_model(inputs=inputs,
-                                                                     weight_decay=self.weight_decay,
-                                                                     end_points=self.end_points,
-                                                                     dtype=self.networks.dtype,
-                                                                     dformat=self.networks.dformat,
-                                                                     is_training=self.is_training,
-                                                                     scope=self.encoder_name)
+                                with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    net = self.encoder_model.build_model(inputs=inputs,
+                                                                         weight_decay=self.weight_decay,
+                                                                         end_points=self.end_points,
+                                                                         dtype=self.networks.dtype,
+                                                                         dformat=self.networks.dformat,
+                                                                         is_training=self.is_training,
+                                                                         scope=self.encoder_name)
 
                             if self.phase == "pretraining":
                                 end_point = "Z"
