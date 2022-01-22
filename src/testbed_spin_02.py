@@ -3123,6 +3123,7 @@ class Networks:
                                                                                     is_training=self.is_training,
                                                                                     scope=self.encoder_name)
                             else:
+                                end_point = "Encoder"
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
                                     net = self.encoder_model.build_model(inputs=inputs,
                                                                          weight_decay=self.weight_decay,
