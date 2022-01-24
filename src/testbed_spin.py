@@ -1856,7 +1856,8 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        cum_rot_degree += rot_degrees[rot_index]
+                        if frame_index in turning_points:
+                            cum_rot_degree += rot_degrees[rot_index]
                         image = image.rotate(cum_rot_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
@@ -2049,6 +2050,8 @@ class Networks:
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
 
+                turning_points = random.sample(range(len(target_frames)), round(len(target_frames) * 0.3))
+
                 rand_aug = RandAugment(n=2, m=5)
                 for frame_index in target_frames:
                     # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
@@ -2076,7 +2079,8 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        cum_rot_degree += rot_degrees[rot_index]
+                        if frame_index in turning_points:
+                            cum_rot_degree += rot_degrees[rot_index]
                         image = image.rotate(cum_rot_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
