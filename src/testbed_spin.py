@@ -198,6 +198,7 @@ class Networks:
 
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
         speed_labels = ["Slow", "Normal", "Fast", "Faster"]
+        speed_labels = ["0", "90", "180", "270"]
         # rotation_labels = ["0", "90", "180", "270"]
         rotation_labels = ["-8", "-4", "-2", "0", "2", "4", "8"]
 
@@ -1821,13 +1822,16 @@ class Networks:
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_degree = int(np.random.uniform(low=0, high=360))
-                # cum_rot_degree = random.choice(rot_degrees)
+                # cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                cum_rot_index = random.choice(range(4))
+                cum_rot_degree = [0, 90, 180, 270][cum_rot_index]
                 # cum_rot_degree = rot_degrees[rot_index]
                 # rot_index = cum_rot_index
-                targets = [speed_index, rot_index]
+                # targets = [speed_index, rot_index]
+                targets = [cum_rot_index, rot_index]
 
-                turning_points = random.sample(range(len(target_frames)), round(len(target_frames) * 0.3))
+                # turning_points = random.sample(range(len(target_frames)), round(len(target_frames) * 0.3))
+                turning_points = range(len(target_frames))
 
                 rand_aug = RandAugment(n=2, m=5)
                 for frame_index in target_frames:
@@ -2044,13 +2048,16 @@ class Networks:
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_degree = int(np.random.uniform(low=0, high=360))
-                # cum_rot_degree = random.choice(rot_degrees)
+                # cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                cum_rot_index = random.choice(range(4))
+                cum_rot_degree = [0, 90, 180, 270][cum_rot_index]
                 # cum_rot_degree = rot_degrees[rot_index]
                 # rot_index = cum_rot_index
-                targets = [speed_index, rot_index]
+                # targets = [speed_index, rot_index]
+                targets = [cum_rot_index, rot_index]
 
-                turning_points = random.sample(range(len(target_frames)), round(len(target_frames) * 0.3))
+                # turning_points = random.sample(range(len(target_frames)), round(len(target_frames) * 0.3))
+                turning_points = range(len(target_frames))
 
                 rand_aug = RandAugment(n=2, m=5)
                 for frame_index in target_frames:
@@ -3048,9 +3055,8 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 0.0
+            self.speed_gamma = 1.0
             self.rotation_gamma = 1.0
-            self.contrast_gamma = 1.0
 
             if batch_size is None:
                 self.batch_size = \
