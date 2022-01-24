@@ -1822,18 +1822,18 @@ class Networks:
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
-                # cum_rot_degree = int(np.random.uniform(low=0, high=360))
-                cum_rot_index = random.choice(range(4))
-                cum_rot_degree = [0, 90, 180, 270][cum_rot_index]
+                cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                # cum_rot_index = random.choice(range(4))
+                # cum_rot_degree = [0, 90, 180, 270][cum_rot_index]
                 # cum_rot_degree = rot_degrees[rot_index]
                 # rot_index = cum_rot_index
-                # targets = [speed_index, rot_index]
-                targets = [cum_rot_index, rot_index]
+                targets = [speed_index, rot_index]
+                # targets = [cum_rot_index, rot_index]
 
                 turning_points = random.sample(range(len(target_frames)), round(len(target_frames) * 0.3))
 
                 rand_aug = RandAugment(n=2, m=5)
-                for frame_index in target_frames:
+                for i, frame_index in enumerate(target_frames):
                     # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                     # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     rand_aug.n = random.choice(range(2))
@@ -1859,10 +1859,10 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        # if frame_index in turning_points:
-                        #     cum_rot_degree += rot_degrees[rot_index]
+                        if i in turning_points:
+                            cum_rot_degree += rot_degrees[rot_index]
 
-                        cum_rot_degree += rot_degrees[rot_index]
+                        # cum_rot_degree += rot_degrees[rot_index]
 
                         image = image.rotate(cum_rot_degree)
 
@@ -2050,18 +2050,18 @@ class Networks:
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
-                # cum_rot_degree = int(np.random.uniform(low=0, high=360))
-                cum_rot_index = random.choice(range(4))
-                cum_rot_degree = [0, 90, 180, 270][cum_rot_index]
+                cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                # cum_rot_index = random.choice(range(4))
+                # cum_rot_degree = [0, 90, 180, 270][cum_rot_index]
                 # cum_rot_degree = rot_degrees[rot_index]
                 # rot_index = cum_rot_index
-                # targets = [speed_index, rot_index]
-                targets = [cum_rot_index, rot_index]
+                targets = [speed_index, rot_index]
+                # targets = [cum_rot_index, rot_index]
 
                 turning_points = random.sample(range(len(target_frames)), round(len(target_frames) * 0.3))
 
                 rand_aug = RandAugment(n=2, m=5)
-                for frame_index in target_frames:
+                for i, frame_index in enumerate(target_frames):
                     # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                     # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     rand_aug.n = random.choice(range(2))
@@ -2087,8 +2087,8 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        # if frame_index in turning_points:
-                        #     cum_rot_degree += rot_degrees[rot_index]
+                        if i in turning_points:
+                            cum_rot_degree += rot_degrees[rot_index]
 
                         cum_rot_degree += rot_degrees[rot_index]
 
@@ -3059,7 +3059,7 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 1.0
+            self.speed_gamma = 0.0
             self.rotation_gamma = 1.0
 
             if batch_size is None:
