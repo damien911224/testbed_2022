@@ -1628,7 +1628,7 @@ class Networks:
 
             self.meta_folder = os.path.join(self.root_path, "meta")
             if self.networks.dataset_name == "ucf101":
-                self.dataset_folder = os.path.join("/mnt/hdd0/UCF101")
+                self.dataset_folder = os.path.join("/mnt/hdd1/UCF101")
                 self.target_path = os.path.join(self.meta_folder, "ucf101.json")
                 self.class_label_path = os.path.join(self.meta_folder, "ucf101_classes.txt")
             elif self.networks.dataset_name == "kinetics":
@@ -1826,6 +1826,8 @@ class Networks:
                 # cum_rot_degree = rot_degrees[rot_index]
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
+
+                turning_points = random.sample(range(len(target_frames)), round(len(target_frames) * 0.2))
 
                 rand_aug = RandAugment(n=2, m=5)
                 for frame_index in target_frames:
