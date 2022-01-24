@@ -1827,7 +1827,7 @@ class Networks:
                 # rot_index = cum_rot_index
                 targets = [speed_index, rot_index]
 
-                turning_points = random.sample(range(len(target_frames)), round(len(target_frames) * 0.1))
+                turning_points = random.sample(range(len(target_frames)), round(len(target_frames) * 0.3))
 
                 rand_aug = RandAugment(n=2, m=5)
                 for frame_index in target_frames:
