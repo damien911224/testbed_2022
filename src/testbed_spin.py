@@ -595,7 +595,7 @@ class Networks:
                                                          "UCF101",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0124_add_spatial"),
+                                                         "0124_HW128"),
                          "weights.ckpt-{}".format(60))
 
         self.save_ckpt_file_folder = \
@@ -2356,7 +2356,7 @@ class Networks:
 
             self.meta_folder = os.path.join(self.root_path, "meta")
             if self.networks.dataset_name == "ucf101":
-                self.dataset_folder = os.path.join("/mnt/hdd1/UCF101")
+                self.dataset_folder = os.path.join("/mnt/hdd0/UCF101")
                 self.target_path = os.path.join(self.meta_folder, "ucf101.json")
                 self.class_label_path = os.path.join(self.meta_folder, "ucf101_classes.txt")
             elif self.networks.dataset_name == "hmdb51":
