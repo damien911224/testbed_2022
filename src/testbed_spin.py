@@ -595,7 +595,7 @@ class Networks:
                                                          "UCF101",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0124_random"),
+                                                         "0124_add_spatial"),
                          "weights.ckpt-{}".format(60))
 
         self.save_ckpt_file_folder = \
