@@ -41,7 +41,7 @@ class Networks:
             # self.epochs = 120
         elif self.dataset_name == "kinetics":
             self.epochs = 30
-        self.temporal_width = 16
+        self.temporal_width = 64
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
