@@ -1002,7 +1002,7 @@ class Networks:
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Finetuning",
-                                                         "0202_random"),
+                                                         "0202_add_spatial"),
                          "weights.ckpt-{}".format(100))
 
         self.model = self.Model(self, is_training=False, phase="finetuning", data_type=self.data_type)
