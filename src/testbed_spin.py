@@ -32,7 +32,7 @@ class Networks:
         self.num_gpus = 4 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "kinetics"
+        self.dataset_name = "ucf101"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
@@ -46,7 +46,8 @@ class Networks:
         self.dtype = tf.float32
         self.dformat = "NDHWC"
 
-        self.model_name = "I3D"
+        # self.model_name = "I3D"
+        self.model_name = "S3D"
         now = time.localtime()
         self.train_date = "{:02d}{:02d}".format(now.tm_mon, now.tm_mday)
 
