@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (224, 224, 3)
+        self.input_size = (112, 112, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -28,11 +28,11 @@ class Networks:
         print("=" * 90)
 
         self.is_server = True
-        self.batch_size = 8 if self.is_server else 2
-        self.num_gpus = 2 if self.is_server else 1
+        self.batch_size = 64 if self.is_server else 2
+        self.num_gpus = 4 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "ucf101"
+        self.dataset_name = "kinetics"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
@@ -40,8 +40,8 @@ class Networks:
             self.epochs = 60
             # self.epochs = 120
         elif self.dataset_name == "kinetics":
-            self.epochs = 10
-        self.temporal_width = 16
+            self.epochs = 30
+        self.temporal_width = 64
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
@@ -4070,4 +4070,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.test(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)
