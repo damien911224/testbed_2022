@@ -203,7 +203,9 @@ class Networks:
         # rotation_labels = ["0", "90", "180", "270"]
         rotation_labels = ["-8", "-4", "-2", "0", "2", "4", "8"]
 
-        with tf.Session() as session:
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        with tf.Session(config=config) as session:
             session.run(self.train_iterator.initializer)
 
             rmtree(self.summary_folder, ignore_errors=True)
