@@ -46,6 +46,12 @@ class Networks:
         self.dtype = tf.float32
         self.dformat = "NDHWC"
 
+
+        if self.dataset_name == "ucf101":
+            self.random_ratio = 0.3
+        elif self.dataset_name == "kinetics":
+            self.random_ratio = 0.1
+
         # self.model_name = "I3D"
         self.model_name = "S3D"
         now = time.localtime()
@@ -1834,7 +1840,8 @@ class Networks:
                 targets = [speed_index, rot_index]
                 # targets = [cum_rot_index, rot_index]
 
-                turning_points = random.sample(range(len(target_frames)), round(len(target_frames) * 0.3))
+                turning_points = random.sample(range(len(target_frames)),
+                                               round(len(target_frames) * self.dataset.networks.random_ratio))
 
                 rand_aug = RandAugment(n=2, m=5)
                 for i, frame_index in enumerate(target_frames):
@@ -2062,7 +2069,8 @@ class Networks:
                 targets = [speed_index, rot_index]
                 # targets = [cum_rot_index, rot_index]
 
-                turning_points = random.sample(range(len(target_frames)), round(len(target_frames) * 0.3))
+                turning_points = random.sample(range(len(target_frames)),
+                                               round(len(target_frames) * self.dataset.networks.random_ratio))
 
                 rand_aug = RandAugment(n=2, m=5)
                 for i, frame_index in enumerate(target_frames):
