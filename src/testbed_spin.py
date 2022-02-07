@@ -46,7 +46,6 @@ class Networks:
         self.dtype = tf.float32
         self.dformat = "NDHWC"
 
-
         if self.dataset_name == "ucf101":
             self.random_ratio = 0.3
         elif self.dataset_name == "kinetics":
