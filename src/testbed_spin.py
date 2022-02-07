@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (224, 224, 3)
+        self.input_size = (112, 112, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -50,7 +50,7 @@ class Networks:
         if self.dataset_name == "ucf101":
             self.random_ratio = 0.3
         elif self.dataset_name == "kinetics":
-            self.random_ratio = 0.1
+            self.random_ratio = 0.3
 
         # self.model_name = "I3D"
         self.model_name = "S3D"
