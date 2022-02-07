@@ -29,10 +29,10 @@ class Networks:
 
         self.is_server = True
         self.batch_size = 8 if self.is_server else 2
-        self.num_gpus = 2 if self.is_server else 1
+        self.num_gpus = 4 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "ucf101"
+        self.dataset_name = "kinetics"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
@@ -41,7 +41,7 @@ class Networks:
             # self.epochs = 120
         elif self.dataset_name == "kinetics":
             self.epochs = 30
-        self.temporal_width = 64
+        self.temporal_width = 16
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
@@ -1637,7 +1637,7 @@ class Networks:
                 self.target_path = os.path.join(self.meta_folder, "ucf101.json")
                 self.class_label_path = os.path.join(self.meta_folder, "ucf101_classes.txt")
             elif self.networks.dataset_name == "kinetics":
-                self.dataset_folder = os.path.join("/mnt/hdd1/Kinetics-400")
+                self.dataset_folder = os.path.join("/mnt/hdd0/Kinetics-400")
                 self.target_path = os.path.join(self.meta_folder, "kinetics-400.json")
                 self.class_label_path = os.path.join(self.meta_folder, "kinetics-400_classes.txt")
 
@@ -4074,4 +4074,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.test(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)
