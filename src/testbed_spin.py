@@ -558,7 +558,7 @@ class Networks:
         self.num_gpus = 2 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "ucf101"
+        self.dataset_name = "hmdb51"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
@@ -599,7 +599,7 @@ class Networks:
                                                          "UCF101",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0203_random_T64"),
+                                                         "0203_random"),
                          "weights.ckpt-{}".format(60))
 
         self.save_ckpt_file_folder = \
@@ -4074,4 +4074,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain(postfix=args.postfix)
+    networks.finetune(postfix=args.postfix)
