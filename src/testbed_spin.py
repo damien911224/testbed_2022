@@ -2912,7 +2912,7 @@ class Networks:
                 class_index = int(splits[2])
 
                 target_frames = list()
-                start_indices = np.linspace(0, frame_length - self.dataset.networks.temporal_width, 8, dtype=np.int64)
+                start_indices = np.linspace(0, frame_length - self.dataset.networks.temporal_width, 10, dtype=np.int64)
                 start_indices = np.unique(start_indices)
                 for start_index in start_indices:
                     this_frames = list()
