@@ -28,11 +28,11 @@ class Networks:
         print("=" * 90)
 
         self.is_server = True
-        self.batch_size = 32 if self.is_server else 2
-        self.num_gpus = 4 if self.is_server else 1
+        self.batch_size = 8 if self.is_server else 2
+        self.num_gpus = 2 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "kinetics"
+        self.dataset_name = "ucf101"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
@@ -1846,8 +1846,8 @@ class Networks:
                 for i, frame_index in enumerate(target_frames):
                     # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                     # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
-                    rand_aug.n = random.choice(range(2))
-                    rand_aug.m = random.choice(range(5))
+                    rand_aug.n = random.choice(range(1, 3))
+                    rand_aug.m = random.choice(range(1, 11))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
@@ -1874,7 +1874,11 @@ class Networks:
 
                         # cum_rot_degree += rot_degrees[rot_index]
 
-                        image = image.rotate(cum_rot_degree)
+                        random_degree = int(np.random.uniform(low=0, high=360))
+                        target_degree = cum_rot_degree - random_degree
+
+                        image = image.rotate(random_degree)
+                        image = image.rotate(target_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
                                             self.dataset.networks.input_size[0] // 2,
@@ -2075,8 +2079,8 @@ class Networks:
                 for i, frame_index in enumerate(target_frames):
                     # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                     # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
-                    rand_aug.n = random.choice(range(2))
-                    rand_aug.m = random.choice(range(5))
+                    rand_aug.n = random.choice(range(1, 3))
+                    rand_aug.m = random.choice(range(1, 11))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
@@ -2101,9 +2105,13 @@ class Networks:
                         if i in turning_points:
                             cum_rot_degree += rot_degrees[rot_index]
 
-                        cum_rot_degree += rot_degrees[rot_index]
+                        # cum_rot_degree += rot_degrees[rot_index]
 
-                        image = image.rotate(cum_rot_degree)
+                        random_degree = int(np.random.uniform(low=0, high=360))
+                        target_degree = cum_rot_degree - random_degree
+
+                        image = image.rotate(random_degree)
+                        image = image.rotate(target_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
                                             self.dataset.networks.input_size[0] // 2,
@@ -4081,4 +4089,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.test(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)
