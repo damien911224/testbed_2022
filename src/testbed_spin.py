@@ -983,7 +983,7 @@ class Networks:
         self.num_gpus = 1
         self.num_workers = 20
         self.data_type = "images"
-        self.dataset_name = "ucf101"
+        self.dataset_name = "hmdb51"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
@@ -1011,7 +1011,7 @@ class Networks:
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Finetuning",
-                                                         "0204_random"),
+                                                         "0208_random"),
                          "weights.ckpt-{}".format(100))
 
         self.model = self.Model(self, is_training=False, phase="finetuning", data_type=self.data_type)
@@ -4081,4 +4081,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.finetune(postfix=args.postfix)
+    networks.test(postfix=args.postfix)
