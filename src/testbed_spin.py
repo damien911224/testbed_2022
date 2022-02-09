@@ -3311,6 +3311,7 @@ class Networks:
                                 cams = list()
                                 N, T, H, W, _ = inputs.get_shape().as_list()
                                 for grad_feature in target_features:
+                                    print(grad_feature)
                                     grad = tf.nn.relu(tf.gradients(cost, grad_feature)[0])
                                     grad = tf.reduce_sum(grad, axis=-1)
                                     grad -= tf.reduce_min(grad, axis=(1, 2, 3), keepdims=True)
