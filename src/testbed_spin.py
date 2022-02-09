@@ -3175,7 +3175,6 @@ class Networks:
                                               shape=(batch_size, ),
                                               name="targets")
 
-            self.end_points = dict()
             for device_id in range(self.num_gpus):
                 with tf.device("/gpu:{:d}".format(device_id if self.device_id is None else self.device_id)):
                     with tf.name_scope("tower_{:02d}".format(device_id)):
@@ -3185,6 +3184,8 @@ class Networks:
                                                      self.batch_size * (device_id + 1)]
                             else:
                                 inputs = self.frames
+
+                            self.end_points = dict()
                             end_point = "Encoder"
                             with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
                                 net = self.encoder_model.build_model(inputs=inputs,
@@ -3297,21 +3298,15 @@ class Networks:
 
                                 cost = tf.reduce_sum(rotation_logits)
                                 target_features = \
-                                    [self.end_points["Mixed_5c"][self.batch_size * device_id:
-                                                                 self.batch_size * (device_id + 1)],
-                                     self.end_points["Mixed_4f"][self.batch_size * device_id:
-                                                                 self.batch_size * (device_id + 1)],
-                                     self.end_points["Mixed_3c"][self.batch_size * device_id:
-                                                                 self.batch_size * (device_id + 1)],
-                                     self.end_points["Conv3d_2d_3x1x1"][self.batch_size * device_id:
-                                                                        self.batch_size * (device_id + 1)],
-                                     self.end_points["Conv3d_1b_7x1x1"][self.batch_size * device_id:
-                                                                        self.batch_size * (device_id + 1)],
+                                    [self.end_points["Mixed_5c"],
+                                     self.end_points["Mixed_4f"],
+                                     self.end_points["Mixed_3c"],
+                                     self.end_points["Conv3d_2d_3x1x1"],
+                                     self.end_points["Conv3d_1b_7x1x1"],
                                      inputs]
                                 cams = list()
                                 N, T, H, W, _ = inputs.get_shape().as_list()
                                 for grad_feature in target_features:
-                                    print(grad_feature)
                                     grad = tf.nn.relu(tf.gradients(cost, grad_feature)[0])
                                     grad = tf.reduce_sum(grad, axis=-1)
                                     grad -= tf.reduce_min(grad, axis=(1, 2, 3), keepdims=True)
