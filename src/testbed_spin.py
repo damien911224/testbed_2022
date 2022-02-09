@@ -983,7 +983,7 @@ class Networks:
         self.num_gpus = 1
         self.num_workers = 20
         self.data_type = "images"
-        self.dataset_name = "hmdb51"
+        self.dataset_name = "ucf101"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
