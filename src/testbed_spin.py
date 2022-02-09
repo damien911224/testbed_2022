@@ -3325,7 +3325,6 @@ class Networks:
                                 cams = tf.reduce_sum(tf.stack(cams, axis=-1), axis=-1)
                                 cams -= tf.reduce_min(cams, axis=(1, 2, 3), keepdims=True)
                                 cams /= tf.reduce_max(cams, axis=(1, 2, 3), keepdims=True) + 1.0e-7
-                                print("!!!!!!")
                                 self.rotation_cams.append(cams)
 
                             else:
