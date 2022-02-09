@@ -987,7 +987,7 @@ class Networks:
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
-        self.temporal_width = 32
+        self.temporal_width = 64
         self.dtype = tf.float32
         self.dformat = "NDHWC"
 
@@ -2920,7 +2920,7 @@ class Networks:
                 class_index = int(splits[2])
 
                 target_frames = list()
-                start_indices = np.linspace(0, frame_length - self.dataset.networks.temporal_width, 8, dtype=np.int64)
+                start_indices = np.linspace(0, frame_length - self.dataset.networks.temporal_width, 10, dtype=np.int64)
                 start_indices = np.unique(start_indices)
                 for start_index in start_indices:
                     this_frames = list()
@@ -4102,4 +4102,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.test(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)
