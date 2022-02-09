@@ -3296,12 +3296,18 @@ class Networks:
                                 self.speed_cams.append(speed_cams)
 
                                 cost = tf.reduce_sum(rotation_logits)
-                                target_features = [self.end_points["Mixed_5c"],
-                                                   self.end_points["Mixed_4f"],
-                                                   self.end_points["Mixed_3c"],
-                                                   self.end_points["Conv3d_2d_3x1x1"],
-                                                   self.end_points["Conv3d_1b_7x1x1"],
-                                                   inputs]
+                                target_features = \
+                                    [self.end_points["Mixed_5c"][self.batch_size * device_id:
+                                                                 self.batch_size * (device_id + 1)],
+                                     self.end_points["Mixed_4f"][self.batch_size * device_id:
+                                                                 self.batch_size * (device_id + 1)],
+                                     self.end_points["Mixed_3c"][self.batch_size * device_id:
+                                                                 self.batch_size * (device_id + 1)],
+                                     self.end_points["Conv3d_2d_3x1x1"][self.batch_size * device_id:
+                                                                        self.batch_size * (device_id + 1)],
+                                     self.end_points["Conv3d_1b_7x1x1"][self.batch_size * device_id:
+                                                                        self.batch_size * (device_id + 1)],
+                                     inputs]
                                 cams = list()
                                 N, T, H, W, _ = inputs.get_shape().as_list()
                                 for grad_feature in target_features:
