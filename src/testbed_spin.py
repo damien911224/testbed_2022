@@ -2060,7 +2060,7 @@ class Networks:
 
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
+                rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
