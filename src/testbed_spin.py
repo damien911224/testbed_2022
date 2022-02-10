@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (224, 224, 3)
+        self.input_size = (112, 112, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -32,7 +32,7 @@ class Networks:
         self.num_gpus = 2 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "ucf101"
+        self.dataset_name = "kinetics"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
@@ -1818,10 +1818,10 @@ class Networks:
 
                 # total_crop_height = height - self.dataset.networks.input_size[1]
                 total_crop_height = height - 224
-                # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                 # total_crop_width = width - self.dataset.networks.input_size[0]
                 total_crop_width = width - 224
-                # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
                 is_flip = np.random.choice([True, False], 1)
 
@@ -1844,8 +1844,8 @@ class Networks:
 
                 rand_aug = RandAugment(n=2, m=5)
                 for i, frame_index in enumerate(target_frames):
-                    crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                    crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                    # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                    # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     rand_aug.n = random.choice(range(1, 3))
                     rand_aug.m = random.choice(range(1, 11))
 
@@ -2051,10 +2051,10 @@ class Networks:
 
                 # total_crop_height = height - self.dataset.networks.input_size[1]
                 total_crop_height = height - 224
-                # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                 # total_crop_width = width - self.dataset.networks.input_size[0]
                 total_crop_width = width - 224
-                # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
                 is_flip = np.random.choice([True, False], 1)
 
@@ -2077,8 +2077,8 @@ class Networks:
 
                 rand_aug = RandAugment(n=2, m=5)
                 for i, frame_index in enumerate(target_frames):
-                    crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                    crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                    # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                    # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     rand_aug.n = random.choice(range(1, 3))
                     rand_aug.m = random.choice(range(1, 11))
 
@@ -4104,4 +4104,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.test(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)
