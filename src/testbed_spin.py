@@ -1642,7 +1642,7 @@ class Networks:
                 self.target_path = os.path.join(self.meta_folder, "ucf101.json")
                 self.class_label_path = os.path.join(self.meta_folder, "ucf101_classes.txt")
             elif self.networks.dataset_name == "kinetics":
-                self.dataset_folder = os.path.join("/mnt/hdd0/Kinetics-400")
+                self.dataset_folder = os.path.join("/mnt/hdd1/Kinetics-400")
                 self.target_path = os.path.join(self.meta_folder, "kinetics-400.json")
                 self.class_label_path = os.path.join(self.meta_folder, "kinetics-400_classes.txt")
 
