@@ -41,7 +41,7 @@ class Networks:
             # self.epochs = 120
         elif self.dataset_name == "kinetics":
             self.epochs = 30
-        self.temporal_width = 16
+        self.temporal_width = 64
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
@@ -1818,16 +1818,16 @@ class Networks:
 
                 # total_crop_height = height - self.dataset.networks.input_size[1]
                 total_crop_height = height - 224
-                crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                 # total_crop_width = width - self.dataset.networks.input_size[0]
                 total_crop_width = width - 224
-                crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
                 is_flip = np.random.choice([True, False], 1)
 
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
+                rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
@@ -1844,8 +1844,8 @@ class Networks:
 
                 rand_aug = RandAugment(n=2, m=5)
                 for i, frame_index in enumerate(target_frames):
-                    # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                    # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                    crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                    crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     rand_aug.n = random.choice(range(1, 3))
                     rand_aug.m = random.choice(range(1, 11))
 
@@ -2051,10 +2051,10 @@ class Networks:
 
                 # total_crop_height = height - self.dataset.networks.input_size[1]
                 total_crop_height = height - 224
-                crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                 # total_crop_width = width - self.dataset.networks.input_size[0]
                 total_crop_width = width - 224
-                crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
                 is_flip = np.random.choice([True, False], 1)
 
@@ -2077,8 +2077,8 @@ class Networks:
 
                 rand_aug = RandAugment(n=2, m=5)
                 for i, frame_index in enumerate(target_frames):
-                    # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                    # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                    crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                    crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     rand_aug.n = random.choice(range(1, 3))
                     rand_aug.m = random.choice(range(1, 11))
 
