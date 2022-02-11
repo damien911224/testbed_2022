@@ -1818,10 +1818,10 @@ class Networks:
 
                 # total_crop_height = height - self.dataset.networks.input_size[1]
                 total_crop_height = height - 224
-                crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                 # total_crop_width = width - self.dataset.networks.input_size[0]
                 total_crop_width = width - 224
-                crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
                 is_flip = np.random.choice([True, False], 1)
 
@@ -1844,8 +1844,8 @@ class Networks:
 
                 rand_aug = RandAugment(n=2, m=5)
                 for i, frame_index in enumerate(target_frames):
-                    # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                    # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                    crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                    crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     rand_aug.n = random.choice(range(1, 3))
                     rand_aug.m = random.choice(range(1, 11))
 
@@ -2051,10 +2051,10 @@ class Networks:
 
                 # total_crop_height = height - self.dataset.networks.input_size[1]
                 total_crop_height = height - 224
-                crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                 # total_crop_width = width - self.dataset.networks.input_size[0]
                 total_crop_width = width - 224
-                crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
                 is_flip = np.random.choice([True, False], 1)
 
@@ -2077,8 +2077,8 @@ class Networks:
 
                 rand_aug = RandAugment(n=2, m=5)
                 for i, frame_index in enumerate(target_frames):
-                    # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
-                    # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                    crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                    crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
                     rand_aug.n = random.choice(range(1, 3))
                     rand_aug.m = random.choice(range(1, 11))
 
