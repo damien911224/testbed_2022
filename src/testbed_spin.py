@@ -32,7 +32,7 @@ class Networks:
         self.num_gpus = 2 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "kinetics"
+        self.dataset_name = "ucf101"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
@@ -47,7 +47,7 @@ class Networks:
         self.dformat = "NDHWC"
 
         if self.dataset_name == "ucf101":
-            self.random_ratio = 0.3
+            self.random_ratio = 1.0
         elif self.dataset_name == "kinetics":
             self.random_ratio = 0.3
 
