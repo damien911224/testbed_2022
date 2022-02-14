@@ -3179,7 +3179,7 @@ class Networks:
                                               name="targets")
 
             for device_id in range(self.num_gpus):
-                with tf.device("/gpu:{:d}".format(device_id if self.device_id is None else self.device_id)):
+                with tf.device("/cpu:{:d}".format(device_id if self.device_id is None else self.device_id)):
                     with tf.name_scope("tower_{:02d}".format(device_id)):
                         with tf.variable_scope(self.name, reuse=tf.AUTO_REUSE):
                             if self.batch_size is not None:
