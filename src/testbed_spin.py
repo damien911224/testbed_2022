@@ -1017,8 +1017,7 @@ class Networks:
         self.model = self.Model(self, is_training=False, phase="finetuning", data_type=self.data_type)
         self.model.build_model()
 
-        # os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join([str(device_id) for device_id in range(self.num_gpus)])
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+        os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join([str(device_id) for device_id in range(self.num_gpus)])
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
         os.environ["TF_ENABLE_WINOGRAD_NONFUSED"] = "1"
 
@@ -3179,7 +3178,7 @@ class Networks:
                                               name="targets")
 
             for device_id in range(self.num_gpus):
-                with tf.device("/cpu:{:d}".format(device_id if self.device_id is None else self.device_id)):
+                with tf.device("/gpu:{:d}".format(device_id if self.device_id is None else self.device_id)):
                     with tf.name_scope("tower_{:02d}".format(device_id)):
                         with tf.variable_scope(self.name, reuse=tf.AUTO_REUSE):
                             if self.batch_size is not None:
