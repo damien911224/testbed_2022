@@ -47,7 +47,7 @@ class Networks:
         self.dformat = "NDHWC"
 
         if self.dataset_name == "ucf101":
-            self.random_ratio = 1.0
+            self.random_ratio = 0.3
         elif self.dataset_name == "kinetics":
             self.random_ratio = 0.3
 

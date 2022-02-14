@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (224, 224, 3)
+        self.input_size = (112, 112, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -38,15 +38,19 @@ class Networks:
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
             self.epochs = 60
-            # self.epochs = 120
         elif self.dataset_name == "kinetics":
-            self.epochs = 10
+            self.epochs = 30
         self.temporal_width = 16
         self.display_term = 1
         self.dtype = tf.float32
         self.dformat = "NDHWC"
 
-        self.model_name = "I3D"
+        if self.dataset_name == "ucf101":
+            self.random_ratio = 0.3
+        elif self.dataset_name == "kinetics":
+            self.random_ratio = 0.3
+
+        self.model_name = "S3D"
         now = time.localtime()
         self.train_date = "{:02d}{:02d}".format(now.tm_mon, now.tm_mday)
 
@@ -528,7 +532,7 @@ class Networks:
         self.dtype = tf.float32
         self.dformat = "NDHWC"
 
-        self.model_name = "I3D"
+        self.model_name = "S3D"
         now = time.localtime()
         self.train_date = "{:02d}{:02d}".format(now.tm_mon, now.tm_mday)
 
@@ -942,8 +946,7 @@ class Networks:
         self.dtype = tf.float32
         self.dformat = "NDHWC"
 
-        self.model_name = "I3D"
-        self.train_date = "1112"
+        self.model_name = "S3D"
 
         self.validation_batch_size = self.batch_size
         self.validation_temporal_width = self.temporal_width
@@ -1771,7 +1774,7 @@ class Networks:
 
                 is_flip = np.random.choice([True, False], 1)
 
-                rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
+                rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
                 rot_index_01 = random.choice(range(len(rot_degrees)))
                 cum_rot_degree_01 = int(np.random.uniform(low=0, high=360))
                 while True:
@@ -1780,6 +1783,11 @@ class Networks:
                         break
                 cum_rot_degree_02 = int(np.random.uniform(low=0, high=360))
                 targets = [rot_index_01, rot_index_02]
+
+                turning_points_01 = random.sample(range(len(target_frames)),
+                                                  round(len(target_frames) * self.dataset.networks.random_ratio))
+                turning_points_02 = random.sample(range(len(target_frames)),
+                                                  round(len(target_frames) * self.dataset.networks.random_ratio))
 
                 frames = list()
                 rand_aug = RandAugment(n=2, m=5)
@@ -1799,10 +1807,20 @@ class Networks:
 
                         image = rand_aug(image)
 
-                        cum_rot_degree_01 += rot_degrees[rot_index_01]
-                        image_01 = image.rotate(cum_rot_degree_01)
-                        cum_rot_degree_02 += rot_degrees[rot_index_02]
-                        image_02 = image.rotate(cum_rot_degree_02)
+                        if i in turning_points_01:
+                            cum_rot_degree_01 += rot_degrees[rot_index_01]
+                        if i in turning_points_02:
+                            cum_rot_degree_02 += rot_degrees[rot_index_02]
+
+                        random_degree = int(np.random.uniform(low=0, high=360))
+                        target_degree = cum_rot_degree_01 - random_degree
+                        image_01 = image.rotate(random_degree)
+                        image_01 = image_01.rotate(target_degree)
+
+                        random_degree = int(np.random.uniform(low=0, high=360))
+                        target_degree = cum_rot_degree_02 - random_degree
+                        image_02 = image.rotate(random_degree)
+                        image_02 = image_02.rotate(target_degree)
 
                         image_01 = image_01.crop((self.dataset.networks.input_size[1] // 2,
                                                   self.dataset.networks.input_size[0] // 2,
@@ -1988,7 +2006,7 @@ class Networks:
 
                 is_flip = np.random.choice([True, False], 1)
 
-                rot_degrees = [-8, -4, -2, 0, 2, 4, 8]
+                rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
                 rot_index_01 = random.choice(range(len(rot_degrees)))
                 cum_rot_degree_01 = int(np.random.uniform(low=0, high=360))
                 while True:
@@ -1997,6 +2015,11 @@ class Networks:
                         break
                 cum_rot_degree_02 = int(np.random.uniform(low=0, high=360))
                 targets = [rot_index_01, rot_index_02]
+
+                turning_points_01 = random.sample(range(len(target_frames)),
+                                                  round(len(target_frames) * self.dataset.networks.random_ratio))
+                turning_points_02 = random.sample(range(len(target_frames)),
+                                                  round(len(target_frames) * self.dataset.networks.random_ratio))
 
                 frames = list()
                 rand_aug = RandAugment(n=2, m=5)
@@ -2016,10 +2039,20 @@ class Networks:
 
                         image = rand_aug(image)
 
-                        cum_rot_degree_01 += rot_degrees[rot_index_01]
-                        image_01 = image.rotate(cum_rot_degree_01)
-                        cum_rot_degree_02 += rot_degrees[rot_index_02]
-                        image_02 = image.rotate(cum_rot_degree_02)
+                        if i in turning_points_01:
+                            cum_rot_degree_01 += rot_degrees[rot_index_01]
+                        if i in turning_points_02:
+                            cum_rot_degree_02 += rot_degrees[rot_index_02]
+
+                        random_degree = int(np.random.uniform(low=0, high=360))
+                        target_degree = cum_rot_degree_01 - random_degree
+                        image_01 = image.rotate(random_degree)
+                        image_01 = image_01.rotate(target_degree)
+
+                        random_degree = int(np.random.uniform(low=0, high=360))
+                        target_degree = cum_rot_degree_02 - random_degree
+                        image_02 = image.rotate(random_degree)
+                        image_02 = image_02.rotate(target_degree)
 
                         image_01 = image_01.crop((self.dataset.networks.input_size[1] // 2,
                                                   self.dataset.networks.input_size[0] // 2,
@@ -3088,7 +3121,6 @@ class Networks:
                                               shape=(batch_size, ),
                                               name="targets")
 
-            self.end_points = dict()
             for device_id in range(self.num_gpus):
                 with tf.device("/gpu:{:d}".format(device_id if self.device_id is None else self.device_id)):
                     with tf.name_scope("tower_{:02d}".format(device_id)):
@@ -3107,6 +3139,7 @@ class Networks:
 
                                 end_point = "Encoder"
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+                                    self.end_points = dict()
                                     encoder_net_01 = self.encoder_model.build_model(inputs=x1,
                                                                                     weight_decay=self.weight_decay,
                                                                                     end_points=self.end_points,
@@ -3114,7 +3147,9 @@ class Networks:
                                                                                     dformat=self.networks.dformat,
                                                                                     is_training=self.is_training,
                                                                                     scope=self.encoder_name)
+                                    end_points_01 = dict(self.end_points)
 
+                                    self.end_points = dict()
                                     encoder_net_02 = self.encoder_model.build_model(inputs=x2,
                                                                                     weight_decay=self.weight_decay,
                                                                                     end_points=self.end_points,
@@ -3122,7 +3157,9 @@ class Networks:
                                                                                     dformat=self.networks.dformat,
                                                                                     is_training=self.is_training,
                                                                                     scope=self.encoder_name)
+                                    end_points_02 = dict(self.end_points)
                             else:
+                                self.end_points = dict()
                                 end_point = "Encoder"
                                 with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
                                     net = self.encoder_model.build_model(inputs=inputs,
@@ -3451,14 +3488,70 @@ class Networks:
                                 loss = self.rotation_gamma * rotation_loss + self.contrast_gamma * contrast_loss
                                 self.loss += loss
 
-                                rotation_cams_01 = tf.maximum(tf.gradients(tf.reduce_sum(r1), x1)[0], 0.0)
-                                rotation_cams_02 = tf.maximum(tf.gradients(tf.reduce_sum(r2), x2)[0], 0.0)
-                                rotation_cams_01 = tf.reduce_sum(rotation_cams_01, axis=-1)
-                                rotation_cams_01 -= tf.reduce_min(rotation_cams_01, axis=(2, 3), keepdims=True)
-                                rotation_cams_01 /= tf.reduce_max(rotation_cams_01, axis=(2, 3), keepdims=True) + 1.0e-7
-                                rotation_cams_02 = tf.reduce_sum(rotation_cams_02, axis=-1)
-                                rotation_cams_02 -= tf.reduce_min(rotation_cams_02, axis=(2, 3), keepdims=True)
-                                rotation_cams_02 /= tf.reduce_max(rotation_cams_02, axis=(2, 3), keepdims=True) + 1.0e-7
+                                # rotation_cams_01 = tf.maximum(tf.gradients(tf.reduce_sum(r1), x1)[0], 0.0)
+                                # rotation_cams_02 = tf.maximum(tf.gradients(tf.reduce_sum(r2), x2)[0], 0.0)
+                                # rotation_cams_01 = tf.reduce_sum(rotation_cams_01, axis=-1)
+                                # rotation_cams_01 -= tf.reduce_min(rotation_cams_01, axis=(2, 3), keepdims=True)
+                                # rotation_cams_01 /= tf.reduce_max(rotation_cams_01, axis=(2, 3), keepdims=True) + 1.0e-7
+                                # rotation_cams_02 = tf.reduce_sum(rotation_cams_02, axis=-1)
+                                # rotation_cams_02 -= tf.reduce_min(rotation_cams_02, axis=(2, 3), keepdims=True)
+                                # rotation_cams_02 /= tf.reduce_max(rotation_cams_02, axis=(2, 3), keepdims=True) + 1.0e-7
+                                # rotation_cams = tf.concat([rotation_cams_01, rotation_cams_02], axis=2)
+
+                                cost = tf.reduce_sum(r1)
+                                target_features = \
+                                    [end_points_01["Mixed_5c"],
+                                     end_points_01["Mixed_4f"],
+                                     end_points_01["Mixed_3c"],
+                                     end_points_01["Conv3d_2d_3x1x1"],
+                                     end_points_01["Conv3d_1b_7x1x1"],
+                                     x1]
+                                rotation_cams_01 = list()
+                                N, T, H, W, _ = inputs.get_shape().as_list()
+                                for grad_feature in target_features:
+                                    grad = tf.nn.relu(tf.gradients(cost, grad_feature)[0])
+                                    grad = tf.reduce_sum(grad, axis=-1)
+                                    grad -= tf.reduce_min(grad, axis=(1, 2, 3), keepdims=True)
+                                    grad /= tf.reduce_max(grad, axis=(1, 2, 3), keepdims=True) + 1.0e-7
+                                    N, t, h, w = grad.get_shape().as_list()
+                                    grad = tf.reshape(grad, (N, t, h * w, 1))
+                                    grad = tf.image.resize_bilinear(grad, (T, h * w))
+                                    grad = tf.reshape(grad, (N * T, h, w, 1))
+                                    grad = tf.image.resize_bilinear(grad, (H, W))
+                                    grad = tf.reshape(grad, (N, T, H, W))
+                                    rotation_cams_01.append(grad)
+                                rotation_cams_01 = tf.reduce_sum(tf.stack(rotation_cams_01, axis=-1), axis=-1)
+                                rotation_cams_01 -= tf.reduce_min(rotation_cams_01, axis=(1, 2, 3), keepdims=True)
+                                rotation_cams_01 /= tf.reduce_max(rotation_cams_01, axis=(1, 2, 3), keepdims=True) + \
+                                                    1.0e-7
+
+                                cost = tf.reduce_sum(r2)
+                                target_features = \
+                                    [end_points_02["Mixed_5c"],
+                                     end_points_02["Mixed_4f"],
+                                     end_points_02["Mixed_3c"],
+                                     end_points_02["Conv3d_2d_3x1x1"],
+                                     end_points_02["Conv3d_1b_7x1x1"],
+                                     x2]
+                                rotation_cams_02 = list()
+                                N, T, H, W, _ = inputs.get_shape().as_list()
+                                for grad_feature in target_features:
+                                    grad = tf.nn.relu(tf.gradients(cost, grad_feature)[0])
+                                    grad = tf.reduce_sum(grad, axis=-1)
+                                    grad -= tf.reduce_min(grad, axis=(1, 2, 3), keepdims=True)
+                                    grad /= tf.reduce_max(grad, axis=(1, 2, 3), keepdims=True) + 1.0e-7
+                                    N, t, h, w = grad.get_shape().as_list()
+                                    grad = tf.reshape(grad, (N, t, h * w, 1))
+                                    grad = tf.image.resize_bilinear(grad, (T, h * w))
+                                    grad = tf.reshape(grad, (N * T, h, w, 1))
+                                    grad = tf.image.resize_bilinear(grad, (H, W))
+                                    grad = tf.reshape(grad, (N, T, H, W))
+                                    rotation_cams_02.append(grad)
+                                rotation_cams_02 = tf.reduce_sum(tf.stack(rotation_cams_02, axis=-1), axis=-1)
+                                rotation_cams_02 -= tf.reduce_min(rotation_cams_02, axis=(1, 2, 3), keepdims=True)
+                                rotation_cams_02 /= tf.reduce_max(rotation_cams_02, axis=(1, 2, 3), keepdims=True) + \
+                                                    1.0e-7
+
                                 rotation_cams = tf.concat([rotation_cams_01, rotation_cams_02], axis=2)
                                 self.rotation_cams.append(rotation_cams)
                             else:
@@ -4274,4 +4367,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.finetune(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)
