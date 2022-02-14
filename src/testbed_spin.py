@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (112, 112, 3)
+        self.input_size = (224, 224, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -710,7 +710,9 @@ class Networks:
         loader = tf.train.Saver(var_list=load_parameters)
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
 
-        with tf.Session() as session:
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        with tf.Session(config=config) as session:
             session.run(self.train_iterator.initializer)
 
             rmtree(self.summary_folder, ignore_errors=True)
@@ -1024,7 +1026,9 @@ class Networks:
 
         loader = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES))
 
-        with tf.Session() as session:
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        with tf.Session(config=config) as session:
             session.run(self.validation_iterator.initializer)
 
             print("Loading Pre-trained Models ...")
@@ -4107,4 +4111,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain(postfix=args.postfix)
+    networks.test(postfix=args.postfix)
