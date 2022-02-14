@@ -601,7 +601,7 @@ class Networks:
             os.path.join(self.dataset.root_path,
                          "networks", "weights",
                          "save", "{}_{}_{}_{}_{}".format(self.model_name,
-                                                         "UCF101",
+                                                         "KINETICS",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
                                                          "0210_random_twice"),
@@ -1011,8 +1011,8 @@ class Networks:
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Finetuning",
-                                                         "0209_random_twice"),
-                         "weights.ckpt-{}".format(98))
+                                                         "0213_random_twice_T_all"),
+                         "weights.ckpt-{}".format(100))
 
         self.model = self.Model(self, is_training=False, phase="finetuning", data_type=self.data_type)
         self.model.build_model()
@@ -1831,7 +1831,8 @@ class Networks:
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                # cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                cum_rot_degree = 0
                 # cum_rot_index = random.choice(range(4))
                 # cum_rot_degree = [0, 90, 180, 270][cum_rot_index]
                 # cum_rot_degree = rot_degrees[rot_index]
@@ -2064,7 +2065,8 @@ class Networks:
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                # cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                cum_rot_degree = 0
                 # cum_rot_index = random.choice(range(4))
                 # cum_rot_degree = [0, 90, 180, 270][cum_rot_index]
                 # cum_rot_degree = rot_degrees[rot_index]
