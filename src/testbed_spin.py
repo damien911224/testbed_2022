@@ -1020,7 +1020,7 @@ class Networks:
         self.model.build_model()
 
         # os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join([str(device_id) for device_id in range(self.num_gpus)])
-        os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
         os.environ["TF_ENABLE_WINOGRAD_NONFUSED"] = "1"
 
