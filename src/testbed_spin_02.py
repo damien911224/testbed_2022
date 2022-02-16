@@ -28,8 +28,8 @@ class Networks:
         print("=" * 90)
 
         self.is_server = True
-        self.batch_size = 8 if self.is_server else 2
-        self.num_gpus = 2 if self.is_server else 1
+        self.batch_size = 32 if self.is_server else 2
+        self.num_gpus = 4 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
         self.dataset_name = "ucf101"
@@ -1768,11 +1768,14 @@ class Networks:
                 height, width, _ = one_frame.shape
 
                 total_crop_height = height - 224
-                crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                crop_top_01 = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                crop_top_02 = int(np.random.uniform(low=0, high=total_crop_height + 1))
                 total_crop_width = width - 224
-                crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                crop_left_01 = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                crop_left_02 = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
-                is_flip = np.random.choice([True, False], 1)
+                is_flip_01 = np.random.choice([True, False], 1)
+                is_flip_02 = np.random.choice([True, False], 1)
 
                 rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
                 rot_index_01 = random.choice(range(len(rot_degrees)))
@@ -1790,22 +1793,31 @@ class Networks:
                                                   round(len(target_frames) * self.dataset.networks.random_ratio))
 
                 frames = list()
-                rand_aug = RandAugment(n=2, m=5)
+                rand_aug_01 = RandAugment(n=2, m=5)
+                rand_aug_02 = RandAugment(n=2, m=5)
                 for i, frame_index in enumerate(target_frames):
-                    rand_aug.n = random.choice(range(2))
-                    rand_aug.m = random.choice(range(5))
+                    rand_aug_01.n = random.choice(range(1, 3))
+                    rand_aug_01.m = random.choice(range(1, 11))
+                    rand_aug_02.n = random.choice(range(1, 3))
+                    rand_aug_02.m = random.choice(range(1, 11))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
                         image = Image.open(image_path)
-                        image = image.crop((crop_left, crop_top,
-                                            crop_left + 224,
-                                            crop_top + 224))
-                        if is_flip:
-                            image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
+                        image_01 = image.crop((crop_left_01, crop_top_01,
+                                               crop_left_01 + 224,
+                                               crop_top_01 + 224))
+                        image_02 = image.crop((crop_left_02, crop_top_02,
+                                               crop_left_02 + 224,
+                                               crop_top_02 + 224))
+                        if is_flip_01:
+                            image_01 = image_01.transpose(method=Image.FLIP_LEFT_RIGHT)
+                        if is_flip_02:
+                            image_02 = image_02.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        image = rand_aug(image)
+                        image_01 = rand_aug_01(image_01)
+                        image_02 = rand_aug_02(image_02)
 
                         if i in turning_points_01:
                             cum_rot_degree_01 += rot_degrees[rot_index_01]
@@ -1814,12 +1826,12 @@ class Networks:
 
                         random_degree = int(np.random.uniform(low=0, high=360))
                         target_degree = cum_rot_degree_01 - random_degree
-                        image_01 = image.rotate(random_degree)
+                        image_01 = image_01.rotate(random_degree)
                         image_01 = image_01.rotate(target_degree)
 
                         random_degree = int(np.random.uniform(low=0, high=360))
                         target_degree = cum_rot_degree_02 - random_degree
-                        image_02 = image.rotate(random_degree)
+                        image_02 = image_02.rotate(random_degree)
                         image_02 = image_02.rotate(target_degree)
 
                         image_01 = image_01.crop((self.dataset.networks.input_size[1] // 2,
@@ -2000,11 +2012,14 @@ class Networks:
                 height, width, _ = one_frame.shape
 
                 total_crop_height = height - 224
-                crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                crop_top_01 = int(np.random.uniform(low=0, high=total_crop_height + 1))
+                crop_top_02 = int(np.random.uniform(low=0, high=total_crop_height + 1))
                 total_crop_width = width - 224
-                crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                crop_left_01 = int(np.random.uniform(low=0, high=total_crop_width + 1))
+                crop_left_02 = int(np.random.uniform(low=0, high=total_crop_width + 1))
 
-                is_flip = np.random.choice([True, False], 1)
+                is_flip_01 = np.random.choice([True, False], 1)
+                is_flip_02 = np.random.choice([True, False], 1)
 
                 rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
                 rot_index_01 = random.choice(range(len(rot_degrees)))
@@ -2022,22 +2037,31 @@ class Networks:
                                                   round(len(target_frames) * self.dataset.networks.random_ratio))
 
                 frames = list()
-                rand_aug = RandAugment(n=2, m=5)
+                rand_aug_01 = RandAugment(n=2, m=5)
+                rand_aug_02 = RandAugment(n=2, m=5)
                 for i, frame_index in enumerate(target_frames):
-                    rand_aug.n = random.choice(range(2))
-                    rand_aug.m = random.choice(range(5))
+                    rand_aug_01.n = random.choice(range(1, 3))
+                    rand_aug_01.m = random.choice(range(1, 11))
+                    rand_aug_02.n = random.choice(range(1, 3))
+                    rand_aug_02.m = random.choice(range(1, 11))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
                         image = Image.open(image_path)
-                        image = image.crop((crop_left, crop_top,
-                                            crop_left + 224,
-                                            crop_top + 224))
-                        if is_flip:
-                            image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
+                        image_01 = image.crop((crop_left_01, crop_top_01,
+                                               crop_left_01 + 224,
+                                               crop_top_01 + 224))
+                        image_02 = image.crop((crop_left_02, crop_top_02,
+                                               crop_left_02 + 224,
+                                               crop_top_02 + 224))
+                        if is_flip_01:
+                            image_01 = image_01.transpose(method=Image.FLIP_LEFT_RIGHT)
+                        if is_flip_02:
+                            image_02 = image_02.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        image = rand_aug(image)
+                        image_01 = rand_aug_01(image_01)
+                        image_02 = rand_aug_02(image_02)
 
                         if i in turning_points_01:
                             cum_rot_degree_01 += rot_degrees[rot_index_01]
@@ -2046,12 +2070,12 @@ class Networks:
 
                         random_degree = int(np.random.uniform(low=0, high=360))
                         target_degree = cum_rot_degree_01 - random_degree
-                        image_01 = image.rotate(random_degree)
+                        image_01 = image_01.rotate(random_degree)
                         image_01 = image_01.rotate(target_degree)
 
                         random_degree = int(np.random.uniform(low=0, high=360))
                         target_degree = cum_rot_degree_02 - random_degree
-                        image_02 = image.rotate(random_degree)
+                        image_02 = image_02.rotate(random_degree)
                         image_02 = image_02.rotate(target_degree)
 
                         image_01 = image_01.crop((self.dataset.networks.input_size[1] // 2,
