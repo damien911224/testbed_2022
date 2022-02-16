@@ -1791,7 +1791,7 @@ class Networks:
 
                 frames = list()
                 rand_aug = RandAugment(n=2, m=5)
-                for frame_index in target_frames:
+                for i, frame_index in enumerate(target_frames):
                     rand_aug.n = random.choice(range(2))
                     rand_aug.m = random.choice(range(5))
 
@@ -2023,7 +2023,7 @@ class Networks:
 
                 frames = list()
                 rand_aug = RandAugment(n=2, m=5)
-                for frame_index in target_frames:
+                for i, frame_index in enumerate(target_frames):
                     rand_aug.n = random.choice(range(2))
                     rand_aug.m = random.choice(range(5))
 
