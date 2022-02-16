@@ -3295,13 +3295,32 @@ class Networks:
                                 loss = self.speed_gamma * speed_loss + self.rotation_gamma * rotation_loss
                                 self.loss += loss
 
-                                speed_cams = tf.maximum(tf.gradients(tf.reduce_sum(speed_logits), inputs)[0], 0.0)
-                                speed_cams = tf.reduce_sum(speed_cams, axis=-1)
-                                # speed_cams -= tf.reduce_min(speed_cams)
-                                speed_cams -= tf.reduce_min(speed_cams, axis=(2, 3), keepdims=True)
-                                # speed_cams /= tf.reduce_max(speed_cams) + 1.0e-7
-                                speed_cams /= tf.reduce_max(speed_cams, axis=(2, 3), keepdims=True) + 1.0e-7
-                                self.speed_cams.append(speed_cams)
+                                cost = tf.reduce_sum(speed_logits)
+                                target_features = \
+                                    [self.end_points["Mixed_5c"],
+                                     self.end_points["Mixed_4f"],
+                                     self.end_points["Mixed_3c"],
+                                     self.end_points["Conv3d_2d_3x1x1"],
+                                     self.end_points["Conv3d_1b_7x1x1"],
+                                     inputs]
+                                cams = list()
+                                N, T, H, W, _ = inputs.get_shape().as_list()
+                                for grad_feature in target_features:
+                                    grad = tf.nn.relu(tf.gradients(cost, grad_feature)[0])
+                                    grad = tf.reduce_sum(grad, axis=-1)
+                                    grad -= tf.reduce_min(grad, axis=(1, 2, 3), keepdims=True)
+                                    grad /= tf.reduce_max(grad, axis=(1, 2, 3), keepdims=True) + 1.0e-7
+                                    N, t, h, w = grad.get_shape().as_list()
+                                    grad = tf.reshape(grad, (N, t, h * w, 1))
+                                    grad = tf.image.resize_bilinear(grad, (T, h * w))
+                                    grad = tf.reshape(grad, (N * T, h, w, 1))
+                                    grad = tf.image.resize_bilinear(grad, (H, W))
+                                    grad = tf.reshape(grad, (N, T, H, W))
+                                    cams.append(grad)
+                                cams = tf.reduce_sum(tf.stack(cams, axis=-1), axis=-1)
+                                cams -= tf.reduce_min(cams, axis=(1, 2, 3), keepdims=True)
+                                cams /= tf.reduce_max(cams, axis=(1, 2, 3), keepdims=True) + 1.0e-7
+                                self.speed_cams.append(cams)
 
                                 cost = tf.reduce_sum(rotation_logits)
                                 target_features = \
