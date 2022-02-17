@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (112, 112, 3)
+        self.input_size = (224, 224, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -532,6 +532,7 @@ class Networks:
         self.dtype = tf.float32
         self.dformat = "NDHWC"
 
+        # self.model_name = "I3D"
         self.model_name = "S3D"
         now = time.localtime()
         self.train_date = "{:02d}{:02d}".format(now.tm_mon, now.tm_mday)
@@ -559,17 +560,17 @@ class Networks:
                                                          "UCF101",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0122_contrast_gamma_01_B256"),
+                                                         "0216_random_twice_contrastive"),
                          "weights.ckpt-{}".format(60))
 
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
                          "networks", "weights",
                          "save", "{}_{}_{}_{}_{}{}".format(self.model_name,
-                                                         self.dataset_name.upper(),
-                                                         "RGB" if self.data_type == "images" else "Flow",
-                                                         "Finetuning",
-                                                         self.train_date, "" if postfix is None else "_" + postfix))
+                                                           self.dataset_name.upper(),
+                                                           "RGB" if self.data_type == "images" else "Flow",
+                                                           "Finetuning",
+                                                           self.train_date, "" if postfix is None else "_" + postfix))
 
         self.summary_folder = os.path.join(self.dataset.root_path,
                                            "networks", "summaries",
@@ -665,7 +666,9 @@ class Networks:
         loader = tf.train.Saver(var_list=load_parameters)
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
 
-        with tf.Session() as session:
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        with tf.Session(config=config) as session:
             session.run(self.train_iterator.initializer)
 
             rmtree(self.summary_folder, ignore_errors=True)
@@ -946,6 +949,7 @@ class Networks:
         self.dtype = tf.float32
         self.dformat = "NDHWC"
 
+        # self.model_name = "I3D"
         self.model_name = "S3D"
 
         self.validation_batch_size = self.batch_size
@@ -965,19 +969,22 @@ class Networks:
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Finetuning",
-                                                         "0120_normal_longer_training"),
+                                                         "0215_random_twice_no_first"),
                          "weights.ckpt-{}".format(100))
 
         self.model = self.Model(self, is_training=False, phase="finetuning", data_type=self.data_type)
         self.model.build_model()
 
         os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join([str(device_id) for device_id in range(self.num_gpus)])
+        # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
         os.environ["TF_ENABLE_WINOGRAD_NONFUSED"] = "1"
 
         loader = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES))
 
-        with tf.Session() as session:
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        with tf.Session(config=config) as session:
             session.run(self.validation_iterator.initializer)
 
             print("Loading Pre-trained Models ...")
@@ -4391,4 +4398,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain(postfix=args.postfix)
+    networks.finetune(postfix=args.postfix)
