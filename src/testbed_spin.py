@@ -38,7 +38,7 @@ class Networks:
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
             # self.epochs = 60
-            self.epochs = 120
+            self.epochs = 180
         elif self.dataset_name == "kinetics":
             self.epochs = 30
         self.temporal_width = 16
@@ -4130,4 +4130,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.test(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)
