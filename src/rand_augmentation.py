@@ -6,6 +6,7 @@ import PIL, PIL.ImageOps, PIL.ImageEnhance, PIL.ImageDraw
 import numpy as np
 # import torch
 from PIL import Image
+from PIL import ImageFilter
 
 
 def ShearX(img, v):  # [-0.3, 0.3]
@@ -158,6 +159,12 @@ def Identity(img, v):
     return img
 
 
+def GaussianBlur(img, v):
+    assert 0.1 <= v <= 2.0
+    x = x.filter(ImageFilter.GaussianBlur(radius=v))
+    return x
+
+
 def augment_list():  # 16 oeprations and their ranges
     # https://github.com/google-research/uda/blob/master/image/randaugment/policies.py#L57
     # l = [
@@ -193,6 +200,7 @@ def augment_list():  # 16 oeprations and their ranges
         (Contrast, 0.1, 1.9),
         (Brightness, 0.1, 1.9),
         (Sharpness, 0.1, 1.9),
+        (GaussianBlur, 0.1, 1.9),
         # (ShearX, 0., 0.3),
         # (ShearY, 0., 0.3),
         # (CutoutAbs, 0, 40),
