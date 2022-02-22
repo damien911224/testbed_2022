@@ -2085,11 +2085,13 @@ class Networks:
                                                round(len(target_frames) * self.dataset.networks.random_ratio))
 
                 rand_aug = RandAugment(n=2, m=5)
+                rand_aug.n = random.choice(range(1, 3))
+                rand_aug.m = random.choice(range(1, 11))
                 for i, frame_index in enumerate(target_frames):
                     # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
                     # crop_left = int(np.random.uniform(low=0, high=total_crop_width + 1))
-                    rand_aug.n = random.choice(range(1, 3))
-                    rand_aug.m = random.choice(range(1, 11))
+                    # rand_aug.n = random.choice(range(1, 3))
+                    # rand_aug.m = random.choice(range(1, 11))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
