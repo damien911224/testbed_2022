@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (112, 112, 3)
+        self.input_size = (224, 224, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -604,8 +604,8 @@ class Networks:
                                                          "UCF101",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0218_random_twice_speed"),
-                         "weights.ckpt-{}".format(120))
+                                                         "0221_random_twice_speed"),
+                         "weights.ckpt-{}".format(180))
 
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
@@ -4130,4 +4130,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain(postfix=args.postfix)
+    networks.finetune(postfix=args.postfix)
