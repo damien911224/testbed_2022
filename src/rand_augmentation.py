@@ -161,8 +161,8 @@ def Identity(img, v):
 
 def GaussianBlur(img, v):
     assert 0.1 <= v <= 2.0
-    x = x.filter(ImageFilter.GaussianBlur(radius=v))
-    return x
+    img = img.filter(ImageFilter.GaussianBlur(radius=v))
+    return img
 
 
 def augment_list():  # 16 oeprations and their ranges
