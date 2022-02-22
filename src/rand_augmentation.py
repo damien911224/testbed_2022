@@ -309,10 +309,11 @@ class RandAugment:
         self.n = n
         self.m = m  # [0, 30]
         self.augment_list = augment_list()
+        self.ops = random.choices(self.augment_list, k=self.n)
 
     def __call__(self, img):
-        ops = random.choices(self.augment_list, k=self.n)
-        for op, minval, maxval in ops:
+        # ops = random.choices(self.augment_list, k=self.n)
+        for op, minval, maxval in self.ops:
             val = (float(self.m) / 30) * float(maxval - minval) + minval
             img = op(img, val)
 
