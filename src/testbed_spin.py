@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (112, 112, 3)
+        self.input_size = (224, 224, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -989,7 +989,7 @@ class Networks:
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
-        self.temporal_width = 32
+        self.temporal_width = 64
         self.dtype = tf.float32
         self.dformat = "NDHWC"
 
@@ -1013,8 +1013,8 @@ class Networks:
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Finetuning",
-                                                         "0219_random_twice_speed"),
-                         "weights.ckpt-{}".format(100))
+                                                         "0209_random_twice"),
+                         "weights.ckpt-{}".format(98))
 
         self.model = self.Model(self, is_training=False, phase="finetuning", data_type=self.data_type)
         self.model.build_model()
@@ -2927,7 +2927,7 @@ class Networks:
                 class_index = int(splits[2])
 
                 target_frames = list()
-                start_indices = np.linspace(0, frame_length - self.dataset.networks.temporal_width, 8, dtype=np.int64)
+                start_indices = np.linspace(0, frame_length - self.dataset.networks.temporal_width, 10, dtype=np.int64)
                 start_indices = np.unique(start_indices)
                 for start_index in start_indices:
                     this_frames = list()
@@ -4130,4 +4130,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain(postfix=args.postfix)
+    networks.test(postfix=args.postfix)
