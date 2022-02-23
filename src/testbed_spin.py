@@ -989,7 +989,7 @@ class Networks:
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
-        self.temporal_width = 16
+        self.temporal_width = 32
         self.dtype = tf.float32
         self.dformat = "NDHWC"
 
