@@ -1802,8 +1802,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                # speed_steps = [0.5, 1.0, 2.0, 3.0]
-                speed_steps = [1.0]
+                speed_steps = [0.5, 1.0, 2.0, 3.0]
+                # speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -2037,8 +2037,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                # speed_steps = [0.5, 1.0, 2.0, 3.0]
-                speed_steps = [1.0]
+                speed_steps = [0.5, 1.0, 2.0, 3.0]
+                # speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -3087,7 +3087,7 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 0.0
+            self.speed_gamma = 1.0
             self.rotation_gamma = 1.0
 
             if batch_size is None:
