@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (224, 224, 3)
+        self.input_size = (112, 112, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -37,8 +37,8 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            self.epochs = 60
-            # self.epochs = 180
+            # self.epochs = 60
+            self.epochs = 180
         elif self.dataset_name == "kinetics":
             self.epochs = 60
         self.temporal_width = 16
@@ -3297,7 +3297,10 @@ class Networks:
                                 loss = self.speed_gamma * speed_loss + self.rotation_gamma * rotation_loss
                                 self.loss += loss
 
-                                cost = tf.reduce_sum(speed_logits)
+                                p_masks = tf.one_hot(tf.argmax(speed_logits, axis=-1), depth=4, dtype=tf.float32)
+                                p_masks = tf.stop_gradient(p_masks)
+                                cost = tf.reduce_sum(tf.multiply(speed_logits, p_masks))
+                                # cost = tf.reduce_sum(speed_logits)
                                 target_features = \
                                     [self.end_points["Mixed_5c"],
                                      self.end_points["Mixed_4f"],
@@ -3324,7 +3327,10 @@ class Networks:
                                 cams /= tf.reduce_max(cams, axis=(1, 2, 3), keepdims=True) + 1.0e-7
                                 self.speed_cams.append(cams)
 
-                                cost = tf.reduce_sum(rotation_logits)
+                                p_masks = tf.one_hot(tf.argmax(rotation_logits, axis=-1), depth=7, dtype=tf.float32)
+                                p_masks = tf.stop_gradient(p_masks)
+                                cost = tf.reduce_sum(tf.multiply(rotation_logits, p_masks))
+                                # cost = tf.reduce_sum(rotation_logits)
                                 target_features = \
                                     [self.end_points["Mixed_5c"],
                                      self.end_points["Mixed_4f"],
@@ -4132,4 +4138,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.test(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)
