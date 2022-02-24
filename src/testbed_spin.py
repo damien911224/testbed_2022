@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (112, 112, 3)
+        self.input_size = (224, 224, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -1013,7 +1013,7 @@ class Networks:
                                                          self.dataset_name.upper(),
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Finetuning",
-                                                         "random_twice_same_aug"),
+                                                         "0223_random_twice_same_aug"),
                          "weights.ckpt-{}".format(100))
 
         self.model = self.Model(self, is_training=False, phase="finetuning", data_type=self.data_type)
@@ -1802,8 +1802,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                # speed_steps = [1.0]
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -1848,7 +1848,7 @@ class Networks:
                 turning_points = random.sample(range(len(target_frames)),
                                                round(len(target_frames) * self.dataset.networks.random_ratio))
 
-                rand_aug = RandAugment(n=2, m=5)
+                # rand_aug = RandAugment(n=2, m=5)
                 rand_aug = RandAugment(n=random.choice(range(1, 3)), m=random.choice(range(1, 11)))
                 for i, frame_index in enumerate(target_frames):
                     # crop_top = int(np.random.uniform(low=0, high=total_crop_height + 1))
@@ -2037,8 +2037,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                # speed_steps = [1.0]
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -3087,7 +3087,7 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 1.0
+            self.speed_gamma = 0.0
             self.rotation_gamma = 1.0
 
             if batch_size is None:
@@ -4138,4 +4138,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.pretrain(postfix=args.postfix)
+    networks.test(postfix=args.postfix)

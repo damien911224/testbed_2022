@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 class Networks:
 
     def __init__(self):
-        self.input_size = (224, 224, 3)
+        self.input_size = (112, 112, 3)
 
     def pretrain(self, postfix):
         print("=" * 90)
@@ -1800,13 +1800,15 @@ class Networks:
                                                   round(len(target_frames) * self.dataset.networks.random_ratio))
 
                 frames = list()
-                rand_aug_01 = RandAugment(n=2, m=5)
-                rand_aug_02 = RandAugment(n=2, m=5)
+                # rand_aug_01 = RandAugment(n=2, m=5)
+                # rand_aug_02 = RandAugment(n=2, m=5)
+                rand_aug_01 = RandAugment(n=random.choice(range(1, 3)), m=random.choice(range(1, 11)))
+                rand_aug_02 = RandAugment(n=random.choice(range(1, 3)), m=random.choice(range(1, 11)))
                 for i, frame_index in enumerate(target_frames):
-                    rand_aug_01.n = random.choice(range(1, 3))
-                    rand_aug_01.m = random.choice(range(1, 11))
-                    rand_aug_02.n = random.choice(range(1, 3))
-                    rand_aug_02.m = random.choice(range(1, 11))
+                    # rand_aug_01.n = random.choice(range(1, 3))
+                    # rand_aug_01.m = random.choice(range(1, 11))
+                    # rand_aug_02.n = random.choice(range(1, 3))
+                    # rand_aug_02.m = random.choice(range(1, 11))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
@@ -2044,13 +2046,15 @@ class Networks:
                                                   round(len(target_frames) * self.dataset.networks.random_ratio))
 
                 frames = list()
-                rand_aug_01 = RandAugment(n=2, m=5)
-                rand_aug_02 = RandAugment(n=2, m=5)
+                # rand_aug_01 = RandAugment(n=2, m=5)
+                # rand_aug_02 = RandAugment(n=2, m=5)
+                rand_aug_01 = RandAugment(n=random.choice(range(1, 3)), m=random.choice(range(1, 11)))
+                rand_aug_02 = RandAugment(n=random.choice(range(1, 3)), m=random.choice(range(1, 11)))
                 for i, frame_index in enumerate(target_frames):
-                    rand_aug_01.n = random.choice(range(1, 3))
-                    rand_aug_01.m = random.choice(range(1, 11))
-                    rand_aug_02.n = random.choice(range(1, 3))
-                    rand_aug_02.m = random.choice(range(1, 11))
+                    # rand_aug_01.n = random.choice(range(1, 3))
+                    # rand_aug_01.m = random.choice(range(1, 11))
+                    # rand_aug_02.n = random.choice(range(1, 3))
+                    # rand_aug_02.m = random.choice(range(1, 11))
 
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
@@ -3519,17 +3523,10 @@ class Networks:
                                 loss = self.rotation_gamma * rotation_loss + self.contrast_gamma * contrast_loss
                                 self.loss += loss
 
-                                # rotation_cams_01 = tf.maximum(tf.gradients(tf.reduce_sum(r1), x1)[0], 0.0)
-                                # rotation_cams_02 = tf.maximum(tf.gradients(tf.reduce_sum(r2), x2)[0], 0.0)
-                                # rotation_cams_01 = tf.reduce_sum(rotation_cams_01, axis=-1)
-                                # rotation_cams_01 -= tf.reduce_min(rotation_cams_01, axis=(2, 3), keepdims=True)
-                                # rotation_cams_01 /= tf.reduce_max(rotation_cams_01, axis=(2, 3), keepdims=True) + 1.0e-7
-                                # rotation_cams_02 = tf.reduce_sum(rotation_cams_02, axis=-1)
-                                # rotation_cams_02 -= tf.reduce_min(rotation_cams_02, axis=(2, 3), keepdims=True)
-                                # rotation_cams_02 /= tf.reduce_max(rotation_cams_02, axis=(2, 3), keepdims=True) + 1.0e-7
-                                # rotation_cams = tf.concat([rotation_cams_01, rotation_cams_02], axis=2)
-
-                                cost = tf.reduce_sum(r1)
+                                # cost = tf.reduce_sum(r1)
+                                p_masks = tf.one_hot(tf.argmax(r1, axis=-1), depth=7, dtype=tf.float32)
+                                p_masks = tf.stop_gradient(p_masks)
+                                cost = tf.reduce_sum(tf.multiply(r1, p_masks))
                                 target_features = \
                                     [end_points_01["Mixed_5c"],
                                      end_points_01["Mixed_4f"],
@@ -3556,7 +3553,10 @@ class Networks:
                                 rotation_cams_01 /= tf.reduce_max(rotation_cams_01, axis=(1, 2, 3), keepdims=True) + \
                                                     1.0e-7
 
-                                cost = tf.reduce_sum(r2)
+                                # cost = tf.reduce_sum(r2)
+                                p_masks = tf.one_hot(tf.argmax(r2, axis=-1), depth=7, dtype=tf.float32)
+                                p_masks = tf.stop_gradient(p_masks)
+                                cost = tf.reduce_sum(tf.multiply(r2, p_masks))
                                 target_features = \
                                     [end_points_02["Mixed_5c"],
                                      end_points_02["Mixed_4f"],
@@ -4398,4 +4398,4 @@ if __name__ == "__main__":
 
     networks = Networks()
 
-    networks.test(postfix=args.postfix)
+    networks.pretrain(postfix=args.postfix)
