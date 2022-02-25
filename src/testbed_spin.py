@@ -206,7 +206,7 @@ class Networks:
         speed_labels = ["Slow", "Normal", "Fast", "Faster"]
         # speed_labels = ["0", "90", "180", "270"]
         # rotation_labels = ["0", "90", "180", "270"]
-        rotation_labels = ["-8", "-4", "-2", "0", "2", "4", "8"]
+        rotation_labels = ["-7", "-5", "-3", "0", "3", "5", "7"]
 
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
