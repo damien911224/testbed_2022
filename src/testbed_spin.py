@@ -49,7 +49,7 @@ class Networks:
         if self.dataset_name == "ucf101":
             self.random_ratio = 0.3
         elif self.dataset_name == "kinetics":
-            self.random_ratio = 0.3
+            self.random_ratio = 0.2
 
         # self.model_name = "I3D"
         self.model_name = "S3D"
