@@ -32,7 +32,7 @@ class Networks:
         self.num_gpus = 2 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "kinetics"
+        self.dataset_name = "ucf101"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
@@ -47,7 +47,7 @@ class Networks:
         self.dformat = "NDHWC"
 
         if self.dataset_name == "ucf101":
-            self.random_ratio = 0.3
+            self.random_ratio = 0.2
         elif self.dataset_name == "kinetics":
             self.random_ratio = 0.2
 
@@ -1802,8 +1802,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                # speed_steps = [0.5, 1.0, 2.0, 3.0]
-                speed_steps = [1.0]
+                speed_steps = [0.5, 1.0, 2.0, 3.0]
+                # speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -1836,8 +1836,8 @@ class Networks:
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_degree = int(np.random.uniform(low=0, high=360))
-                # cum_rot_degree = 0
+                # cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                cum_rot_degree = 0
                 # cum_rot_index = random.choice(range(4))
                 # cum_rot_degree = [0, 90, 180, 270][cum_rot_index]
                 # cum_rot_degree = rot_degrees[rot_index]
@@ -2037,8 +2037,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                # speed_steps = [0.5, 1.0, 2.0, 3.0]
-                speed_steps = [1.0]
+                speed_steps = [0.5, 1.0, 2.0, 3.0]
+                # speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -2071,8 +2071,8 @@ class Networks:
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
-                cum_rot_degree = int(np.random.uniform(low=0, high=360))
-                # cum_rot_degree = 0
+                # cum_rot_degree = int(np.random.uniform(low=0, high=360))
+                cum_rot_degree = 0
                 # cum_rot_index = random.choice(range(4))
                 # cum_rot_degree = [0, 90, 180, 270][cum_rot_index]
                 # cum_rot_degree = rot_degrees[rot_index]
@@ -3087,7 +3087,7 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 0.0
+            self.speed_gamma = 1.0
             self.rotation_gamma = 1.0
 
             if batch_size is None:
