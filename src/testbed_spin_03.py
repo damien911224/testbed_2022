@@ -117,9 +117,9 @@ class Networks:
                                                     momentum=0.9)
 
         self.model = self.Model(self, is_training=True, phase="pretraining",
-                                data_type=self.data_type, num_classes=4 + 7)
+                                data_type=self.data_type, num_classes=4 + 9)
         self.model_validation = self.Model(self, is_training=False, phase="pretraining",
-                                           data_type=self.data_type, num_classes=4 + 7)
+                                           data_type=self.data_type, num_classes=4 + 9)
         self.model.build_model()
         self.model_validation.build_model()
 
@@ -3294,7 +3294,8 @@ class Networks:
                                 cams /= tf.reduce_max(cams, axis=(1, 2, 3), keepdims=True) + 1.0e-7
                                 self.speed_cams.append(cams)
 
-                                p_masks = tf.one_hot(tf.argmax(rotation_logits, axis=-1), depth=7, dtype=tf.float32)
+                                p_masks = tf.one_hot(tf.argmax(rotation_logits, axis=-1),
+                                                     depth=self.num_classes - 4, dtype=tf.float32)
                                 p_masks = tf.stop_gradient(p_masks)
                                 cost = tf.reduce_sum(tf.multiply(rotation_logits, p_masks))
                                 # cost = tf.reduce_sum(rotation_logits)
