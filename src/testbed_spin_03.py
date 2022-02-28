@@ -37,8 +37,8 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            # self.epochs = 60
-            self.epochs = 180
+            self.epochs = 60
+            # self.epochs = 180
         elif self.dataset_name == "kinetics":
             self.epochs = 120
         self.temporal_width = 16
@@ -1802,8 +1802,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                # speed_steps = [1.0]
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
@@ -2020,8 +2020,8 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                # speed_steps = [1.0]
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
