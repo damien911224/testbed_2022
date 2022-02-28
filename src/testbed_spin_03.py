@@ -204,9 +204,10 @@ class Networks:
 
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
         speed_labels = ["Slow", "Normal", "Fast", "Faster"]
-        # speed_labels = ["0", "90", "180", "270"]
-        # rotation_labels = ["0", "90", "180", "270"]
-        rotation_labels = ["-7", "-5", "-3", "0", "3", "5", "7"]
+        # rotation_labels = ["-7", "-5", "-3", "0", "3", "5", "7"]
+        rotation_labels = ["0, 0", "delta, delta", "delta, 0", "0, delta",
+                           "delta, -delta", "-delta, delta", "-delta, -delta",
+                           "-delta, 0", "0, -delta"]
 
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
