@@ -117,9 +117,9 @@ class Networks:
                                                     momentum=0.9)
 
         self.model = self.Model(self, is_training=True, phase="pretraining",
-                                data_type=self.data_type, num_classes=4 + 9)
+                                data_type=self.data_type, num_classes=7 + 9)
         self.model_validation = self.Model(self, is_training=False, phase="pretraining",
-                                           data_type=self.data_type, num_classes=4 + 9)
+                                           data_type=self.data_type, num_classes=7 + 9)
         self.model.build_model()
         self.model_validation.build_model()
 
@@ -203,7 +203,8 @@ class Networks:
         self.previous_best_epoch = None
 
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
-        speed_labels = ["Slow", "Normal", "Fast", "Faster"]
+        # speed_labels = ["Slow", "Normal", "Fast", "Faster"]
+        speed_labels = ["-7", "-5", "-3", "0", "3", "5", "7"]
         # rotation_labels = ["-7", "-5", "-3", "0", "3", "5", "7"]
         rotation_labels = ["0, 0", "delta, delta", "delta, 0", "0, delta",
                            "delta, -delta", "-delta, delta", "-delta, -delta",
@@ -1832,8 +1833,8 @@ class Networks:
                 is_flip = np.random.choice([True, False], 1)
 
                 frames = list()
-                # rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
-                # rot_index = random.choice(range(len(rot_degrees)))
+                rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
+                rot_index = random.choice(range(len(rot_degrees)))
 
                 delta = 10
                 trans_deltas = [[0, 0], [delta, delta], [delta, 0], [0, delta],
@@ -1841,14 +1842,15 @@ class Networks:
                                 [-delta, 0], [0, -delta]]
                 trans_index = random.choice(range(len(trans_deltas)))
 
-                targets = [speed_index, trans_index]
+                # targets = [speed_index, trans_index]
+                targets = [rot_index, trans_index]
 
                 sampled_points = random.sample(range(len(target_frames)),
                                                round(len(target_frames) * self.dataset.networks.random_ratio))
 
                 rand_aug = RandAugment(n=random.choice(range(1, 3)), m=random.choice(range(1, 11)))
                 for i, frame_index in enumerate(target_frames):
-                    # cum_rot_degree = 0
+                    cum_rot_degree = 0
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
@@ -1860,16 +1862,16 @@ class Networks:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
                         if i in sampled_points:
-                            # cum_rot_degree += rot_degrees[rot_index]
+                            cum_rot_degree += rot_degrees[rot_index]
                             image = image.transform(image.size, Image.AFFINE,
                                                     (1, 0, trans_deltas[trans_index][0],
                                                      0, 1, trans_deltas[trans_index][1]))
 
-                        # random_degree = int(np.random.uniform(low=0, high=360))
-                        # target_degree = cum_rot_degree - random_degree
+                        random_degree = int(np.random.uniform(low=0, high=360))
+                        target_degree = cum_rot_degree - random_degree
 
-                        # image = image.rotate(random_degree)
-                        # image = image.rotate(target_degree)
+                        image = image.rotate(random_degree)
+                        image = image.rotate(target_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
                                             self.dataset.networks.input_size[0] // 2,
@@ -2050,8 +2052,8 @@ class Networks:
                 is_flip = np.random.choice([True, False], 1)
 
                 frames = list()
-                # rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
-                # rot_index = random.choice(range(len(rot_degrees)))
+                rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
+                rot_index = random.choice(range(len(rot_degrees)))
 
                 delta = 10
                 trans_deltas = [[0, 0], [delta, delta], [delta, 0], [0, delta],
@@ -2059,14 +2061,15 @@ class Networks:
                                 [-delta, 0], [0, -delta]]
                 trans_index = random.choice(range(len(trans_deltas)))
 
-                targets = [speed_index, trans_index]
+                # targets = [speed_index, trans_index]
+                targets = [rot_index, trans_index]
 
                 sampled_points = random.sample(range(len(target_frames)),
                                                round(len(target_frames) * self.dataset.networks.random_ratio))
 
                 rand_aug = RandAugment(n=random.choice(range(1, 3)), m=random.choice(range(1, 11)))
                 for i, frame_index in enumerate(target_frames):
-                    # cum_rot_degree = 0
+                    cum_rot_degree = 0
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
@@ -2078,16 +2081,16 @@ class Networks:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
                         if i in sampled_points:
-                            # cum_rot_degree += rot_degrees[rot_index]
+                            cum_rot_degree += rot_degrees[rot_index]
                             image = image.transform(image.size, Image.AFFINE,
                                                     (1, 0, trans_deltas[trans_index][0],
                                                      0, 1, trans_deltas[trans_index][1]))
 
-                        # random_degree = int(np.random.uniform(low=0, high=360))
-                        # target_degree = cum_rot_degree - random_degree
+                        random_degree = int(np.random.uniform(low=0, high=360))
+                        target_degree = cum_rot_degree - random_degree
 
-                        # image = image.rotate(random_degree)
-                        # image = image.rotate(target_degree)
+                        image = image.rotate(random_degree)
+                        image = image.rotate(target_degree)
 
                         image = image.crop((self.dataset.networks.input_size[1] // 2,
                                             self.dataset.networks.input_size[0] // 2,
@@ -3054,7 +3057,7 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 0.0
+            self.speed_gamma = 1.0
             self.rotation_gamma = 1.0
 
             if batch_size is None:
@@ -3229,8 +3232,8 @@ class Networks:
                                 targets = self.targets
 
                             if self.phase == "pretraining":
-                                speed_logits = net[..., :4]
-                                rotation_logits = net[..., 4:]
+                                speed_logits = net[..., :7]
+                                rotation_logits = net[..., 7:]
                                 self.speed_predictions.append(tf.nn.softmax(speed_logits, axis=-1))
                                 self.rotation_predictions.append(tf.nn.softmax(rotation_logits, axis=-1))
 
@@ -3264,10 +3267,9 @@ class Networks:
                                 loss = self.speed_gamma * speed_loss + self.rotation_gamma * rotation_loss
                                 self.loss += loss
 
-                                p_masks = tf.one_hot(tf.argmax(speed_logits, axis=-1), depth=4, dtype=tf.float32)
+                                p_masks = tf.one_hot(tf.argmax(speed_logits, axis=-1), depth=7, dtype=tf.float32)
                                 p_masks = tf.stop_gradient(p_masks)
                                 cost = tf.reduce_sum(tf.multiply(speed_logits, p_masks))
-                                # cost = tf.reduce_sum(speed_logits)
                                 target_features = \
                                     [self.end_points["Mixed_5c"],
                                      self.end_points["Mixed_4f"],
@@ -3295,10 +3297,9 @@ class Networks:
                                 self.speed_cams.append(cams)
 
                                 p_masks = tf.one_hot(tf.argmax(rotation_logits, axis=-1),
-                                                     depth=self.num_classes - 4, dtype=tf.float32)
+                                                     depth=self.num_classes - 7, dtype=tf.float32)
                                 p_masks = tf.stop_gradient(p_masks)
                                 cost = tf.reduce_sum(tf.multiply(rotation_logits, p_masks))
-                                # cost = tf.reduce_sum(rotation_logits)
                                 target_features = \
                                     [self.end_points["Mixed_5c"],
                                      self.end_points["Mixed_4f"],
