@@ -1861,7 +1861,7 @@ class Networks:
 
                         if i in sampled_points:
                             # cum_rot_degree += rot_degrees[rot_index]
-                            image = image.transform(image.size, image.Image.AFFINE,
+                            image = image.transform(image.size, Image.AFFINE,
                                                     (1, 0, trans_deltas[trans_index][0],
                                                      0, 1, trans_deltas[trans_index][1]))
 
@@ -2079,7 +2079,7 @@ class Networks:
 
                         if i in sampled_points:
                             # cum_rot_degree += rot_degrees[rot_index]
-                            image = image.transform(image.size, image.Image.AFFINE,
+                            image = image.transform(image.size, Image.AFFINE,
                                                     (1, 0, trans_deltas[trans_index][0],
                                                      0, 1, trans_deltas[trans_index][1]))
 
