@@ -3179,6 +3179,7 @@ class Networks:
                 self.rotation_cams = list()
                 self.translation_cams = list()
                 self.speed_predictions = list()
+                self.rotation_predictions = list()
                 self.translation_predictions = list()
             else:
                 self.accuracy = 0.0
