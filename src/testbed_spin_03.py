@@ -47,9 +47,11 @@ class Networks:
         self.dformat = "NDHWC"
 
         if self.dataset_name == "ucf101":
-            self.random_ratio = 0.2
+            self.rot_random_ratio = 0.2
+            self.trans_random_ratio = 0.2
         elif self.dataset_name == "kinetics":
-            self.random_ratio = 0.2
+            self.rot_random_ratio = 0.2
+            self.trans_random_ratio = 0.2
 
         # self.model_name = "I3D"
         self.model_name = "S3D"
@@ -1908,8 +1910,11 @@ class Networks:
 
                 targets = [speed_index, rot_index, trans_index]
 
-                sampled_points = random.sample(range(len(target_frames)),
-                                               round(len(target_frames) * self.dataset.networks.random_ratio))
+                rot_sampled_points = random.sample(range(len(target_frames)),
+                                                   round(len(target_frames) * self.dataset.networks.rot_random_ratio))
+                trans_sampled_points = \
+                    random.sample(range(len(target_frames)),
+                                  round(len(target_frames) * self.dataset.networks.trans_random_ratio))
 
                 rand_aug = RandAugment(n=random.choice(range(1, 3)), m=random.choice(range(1, 11)))
                 for i, frame_index in enumerate(target_frames):
@@ -1924,8 +1929,9 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        if i in sampled_points:
+                        if i in rot_sampled_points:
                             cum_rot_degree += rot_degrees[rot_index]
+                        if i in trans_sampled_points:
                             image = image.transform(image.size, Image.AFFINE,
                                                     (1, 0, trans_deltas[trans_index][0],
                                                      0, 1, trans_deltas[trans_index][1]))
@@ -2126,8 +2132,11 @@ class Networks:
 
                 targets = [speed_index, rot_index, trans_index]
 
-                sampled_points = random.sample(range(len(target_frames)),
-                                               round(len(target_frames) * self.dataset.networks.random_ratio))
+                rot_sampled_points = random.sample(range(len(target_frames)),
+                                                   round(len(target_frames) * self.dataset.networks.rot_random_ratio))
+                trans_sampled_points = \
+                    random.sample(range(len(target_frames)),
+                                  round(len(target_frames) * self.dataset.networks.trans_random_ratio))
 
                 rand_aug = RandAugment(n=random.choice(range(1, 3)), m=random.choice(range(1, 11)))
                 for i, frame_index in enumerate(target_frames):
@@ -2142,8 +2151,9 @@ class Networks:
                         if is_flip:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
-                        if i in sampled_points:
+                        if i in rot_sampled_points:
                             cum_rot_degree += rot_degrees[rot_index]
+                        if i in trans_sampled_points:
                             image = image.transform(image.size, Image.AFFINE,
                                                     (1, 0, trans_deltas[trans_index][0],
                                                      0, 1, trans_deltas[trans_index][1]))
