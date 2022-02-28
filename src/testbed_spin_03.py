@@ -117,9 +117,9 @@ class Networks:
                                                     momentum=0.9)
 
         self.model = self.Model(self, is_training=True, phase="pretraining",
-                                data_type=self.data_type, num_classes=7 + 9)
+                                data_type=self.data_type, num_classes=4 + 7 + 9)
         self.model_validation = self.Model(self, is_training=False, phase="pretraining",
-                                           data_type=self.data_type, num_classes=7 + 9)
+                                           data_type=self.data_type, num_classes=4 + 7 + 9)
         self.model.build_model()
         self.model_validation.build_model()
 
@@ -154,10 +154,15 @@ class Networks:
             self.speed_loss_summary = tf.summary.scalar("speed_loss", self.speed_loss_summary_ph)
             self.rotation_loss_summary_ph = tf.placeholder(dtype=tf.float32)
             self.rotation_loss_summary = tf.summary.scalar("rotation_loss", self.rotation_loss_summary_ph)
+            self.translation_loss_summary_ph = tf.placeholder(dtype=tf.float32)
+            self.translation_loss_summary = tf.summary.scalar("translation_loss", self.translation_loss_summary_ph)
             self.speed_accuracy_summary_ph = tf.placeholder(dtype=tf.float32)
             self.speed_accuracy_summary = tf.summary.scalar("speed_accuracy", self.speed_accuracy_summary_ph)
             self.rotation_accuracy_summary_ph = tf.placeholder(dtype=tf.float32)
             self.rotation_accuracy_summary = tf.summary.scalar("rotation_accuracy", self.rotation_accuracy_summary_ph)
+            self.translation_accuracy_summary_ph = tf.placeholder(dtype=tf.float32)
+            self.translation_accuracy_summary = tf.summary.scalar("translation_accuracy",
+                                                                  self.translation_accuracy_summary_ph)
             self.current_learning_rate_ph = tf.placeholder(dtype=tf.float32)
             self.current_learning_rate_summary = tf.summary.scalar("current_learning_rate",
                                                                    self.current_learning_rate_ph)
@@ -173,7 +178,7 @@ class Networks:
 
             self.cam_summary_ph = \
                 tf.placeholder(dtype=tf.uint8,
-                               shape=(image_summary_size, self.input_size[0] * 2, self.input_size[1] * 16 + 10 * 15, 3))
+                               shape=(image_summary_size, self.input_size[0] * 3, self.input_size[1] * 16 + 10 * 15, 3))
             self.cam_summary = \
                 tf.summary.image("cam_images",
                                  self.cam_summary_ph,
@@ -183,15 +188,19 @@ class Networks:
                                                      self.loss_summary,
                                                      self.speed_loss_summary,
                                                      self.rotation_loss_summary,
+                                                     self.translation_loss_summary,
                                                      self.speed_accuracy_summary,
                                                      self.rotation_accuracy_summary,
+                                                     self.translation_accuracy_summary,
                                                      self.current_learning_rate_summary])
 
             self.validation_summaries = tf.summary.merge([self.loss_summary,
                                                           self.speed_loss_summary,
                                                           self.rotation_loss_summary,
+                                                          self.translation_loss_summary,
                                                           self.speed_accuracy_summary,
                                                           self.rotation_accuracy_summary,
+                                                          self.translation_accuracy_summary,
                                                           self.image_summary,
                                                           self.cam_summary])
 
@@ -203,12 +212,9 @@ class Networks:
         self.previous_best_epoch = None
 
         saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=self.epochs)
-        # speed_labels = ["Slow", "Normal", "Fast", "Faster"]
-        speed_labels = ["-7", "-5", "-3", "0", "3", "5", "7"]
-        # rotation_labels = ["-7", "-5", "-3", "0", "3", "5", "7"]
-        rotation_labels = ["0, 0", "delta, delta", "delta, 0", "0, delta",
-                           "delta, -delta", "-delta, delta", "-delta, -delta",
-                           "-delta, 0", "0, -delta"]
+        speed_labels = ["Slow", "Normal", "Fast", "Faster"]
+        rotation_labels = ["-7", "-5", "-3", "0", "3", "5", "7"]
+        translation_labels = ["0, 0", "d, d", "d, 0", "0, d", "d, -d", "-d, d", "-d, -d", "-d, 0", "0, -d"]
 
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
@@ -238,8 +244,10 @@ class Networks:
                 epoch_loss = 0.0
                 epoch_speed_loss = 0.0
                 epoch_rotation_loss = 0.0
+                epoch_translation_loss = 0.0
                 epoch_speed_accuracy = 0.0
                 epoch_rotation_accuracy = 0.0
+                epoch_translation_accuracy = 0.0
                 epoch_learning_rate = 0.0
                 epoch_batch_iteration = 0
                 epoch_time = 0.0
@@ -263,20 +271,26 @@ class Networks:
                     _, loss, \
                     speed_loss, \
                     rotation_loss, \
+                    translation_loss, \
                     speed_accuracy, \
                     rotation_accuracy, \
+                    translation_accuracy, \
                     speed_predictions, \
                     rotation_predictions, \
+                    translation_predictions, \
                     current_lr = \
                         session.run(
                             [self.train_step,
                              self.model.loss,
                              self.model.speed_loss,
                              self.model.rotation_loss,
+                             self.model.translation_loss,
                              self.model.speed_accuracy,
                              self.model.rotation_accuracy,
+                             self.model.translation_accuracy,
                              self.model.speed_predictions,
                              self.model.rotation_predictions,
+                             self.model.translation_predictions,
                              current_learning_rate],
                             feed_dict={self.model.frames: frame_vectors,
                                        self.model.targets: target_vectors
@@ -286,13 +300,16 @@ class Networks:
                     epoch_loss += loss
                     epoch_speed_loss += speed_loss
                     epoch_rotation_loss += rotation_loss
+                    epoch_translation_loss += translation_loss
                     epoch_speed_accuracy += speed_accuracy
                     epoch_rotation_accuracy += rotation_accuracy
+                    epoch_translation_accuracy += translation_accuracy
                     epoch_learning_rate += current_lr
 
                     if (batch_iteration) % self.display_term == 0:
                         speed_predictions = np.argmax(speed_predictions, axis=-1)
                         rotation_predictions = np.argmax(rotation_predictions, axis=-1)
+                        translation_predictions = np.argmax(translation_predictions, axis=-1)
                         targets = target_vectors
 
                         if len(targets) < 3:
@@ -307,25 +324,35 @@ class Networks:
                             [speed_labels[targets[show_index, 0]] for show_index in show_indices]
                         rotation_target_labels = \
                             [rotation_labels[targets[show_index, 1]] for show_index in show_indices]
+                        translation_target_labels = \
+                            [translation_labels[targets[show_index, 2]] for show_index in show_indices]
                         speed_prediction_labels = \
                             [speed_labels[speed_predictions[show_index]] for show_index in show_indices]
                         rotation_prediction_labels = \
                             [rotation_labels[rotation_predictions[show_index]] for show_index in show_indices]
+                        translation_prediction_labels = \
+                            [translation_labels[translation_predictions[show_index]] for show_index in show_indices]
 
                         print("{:<20s}: {:05d} |{:<20s}: {:03d}({:03d}/{:03d})\n" \
-                              "{:<20s}: {:.9f}/({:.5f},{:.5f}) ({:f})\n" \
-                              "Expected({:03d}): {:<16s},{:<16s}|Prediction({:03d}): {:<16s},{:<16s}\n" \
-                              "Expected({:03d}): {:<16s},{:<16s}|Prediction({:03d}): {:<16s},{:<16s}\n" \
-                              "Expected({:03d}): {:<16s},{:<16s}|Prediction({:03d}): {:<16s},{:<16s}".format(
+                              "{:<20s}: {:.9f}/({:.5f},{:.5f},{:.5f}) ({:f})\n" \
+                              "Expected({:03d}): {:<8s},{:<8s},{:<8s}|Prediction({:03d}): {:<8s},{:<8s},{:<8s}\n" \
+                              "Expected({:03d}): {:<8s},{:<8s},{:<8s}|Prediction({:03d}): {:<8s},{:<8s},{:<8s}\n" \
+                              "Expected({:03d}): {:<8s},{:<8s},{:<8s}|Prediction({:03d}): {:<8s},{:<8s},{:<8s}".format(
                             "Epochs", epoch, "Batch Iterations", batch_iteration,
                             epoch_batch_iteration + 1, batch_length,
-                            "Loss", loss, speed_accuracy, rotation_accuracy, current_lr,
-                            show_indices[0] + 1, speed_target_labels[0], rotation_target_labels[0],
-                            show_indices[0] + 1, speed_prediction_labels[0], rotation_prediction_labels[0],
-                            show_indices[1] + 1, speed_target_labels[1], rotation_target_labels[1],
-                            show_indices[1] + 1, speed_prediction_labels[1], rotation_prediction_labels[1],
-                            show_indices[2] + 1, speed_target_labels[2], rotation_target_labels[2],
-                            show_indices[2] + 1, speed_prediction_labels[2], rotation_prediction_labels[2]))
+                            "Loss", loss, speed_accuracy, rotation_accuracy, translation_accuracy, current_lr,
+                            show_indices[0] + 1, speed_target_labels[0],
+                            rotation_target_labels[0], translation_target_labels[0],
+                            show_indices[0] + 1, speed_prediction_labels[0],
+                            rotation_prediction_labels[0], translation_prediction_labels[0],
+                            show_indices[1] + 1, speed_target_labels[1],
+                            rotation_target_labels[1], translation_target_labels[1],
+                            show_indices[1] + 1, speed_prediction_labels[1],
+                            rotation_prediction_labels[1], translation_prediction_labels[1],
+                            show_indices[2] + 1, speed_target_labels[2],
+                            rotation_target_labels[2], translation_target_labels[2],
+                            show_indices[2] + 1, speed_prediction_labels[2],
+                            rotation_prediction_labels[2], translation_prediction_labels[2]))
 
                     epoch_batch_iteration += 1
                     batch_iteration += 1
@@ -341,8 +368,10 @@ class Networks:
                 epoch_loss /= float(epoch_batch_iteration)
                 epoch_speed_loss /= float(epoch_batch_iteration)
                 epoch_rotation_loss /= float(epoch_batch_iteration)
+                epoch_translation_loss /= float(epoch_batch_iteration)
                 epoch_speed_accuracy /= float(epoch_batch_iteration)
                 epoch_rotation_accuracy /= float(epoch_batch_iteration)
+                epoch_translation_accuracy /= float(epoch_batch_iteration)
                 epoch_learning_rate /= float(epoch_batch_iteration)
                 epoch_training_time /= float(epoch_batch_iteration)
                 epoch_preprocessing_time /= float(epoch_batch_iteration)
@@ -351,8 +380,10 @@ class Networks:
                                             feed_dict={self.loss_summary_ph: epoch_loss,
                                                        self.speed_loss_summary_ph: epoch_speed_loss,
                                                        self.rotation_loss_summary_ph: epoch_rotation_loss,
+                                                       self.translation_loss_summary_ph: epoch_translation_loss,
                                                        self.speed_accuracy_summary_ph: epoch_speed_accuracy,
                                                        self.rotation_accuracy_summary_ph: epoch_rotation_accuracy,
+                                                       self.translation_accuracy_summary_ph: epoch_translation_accuracy,
                                                        self.current_learning_rate_ph: epoch_learning_rate
                                                        })
                 self.train_summary_writer.add_summary(train_summary, epoch)
@@ -378,8 +409,10 @@ class Networks:
                     validation_loss = 0.0
                     validation_speed_loss = 0.0
                     validation_rotation_loss = 0.0
+                    validation_translation_loss = 0.0
                     validation_speed_accuracy = 0.0
                     validation_rotation_accuracy = 0.0
+                    validation_translation_accuracy = 0.0
                     cam_images = list()
                     input_images = list()
 
@@ -397,22 +430,30 @@ class Networks:
                         loss, \
                         speed_loss, \
                         rotation_loss, \
+                        translation_loss, \
                         speed_accuracy, \
                         rotation_accuracy, \
+                        translation_accuracy, \
                         speed_cams, \
                         rotation_cams, \
+                        translation_cams, \
                         speed_predictions, \
-                        rotation_predictions = \
+                        rotation_predictions, \
+                        translation_predictions = \
                             session.run(
                                 [self.model_validation.loss,
                                  self.model_validation.speed_loss,
                                  self.model_validation.rotation_loss,
+                                 self.model_validation.translation_loss,
                                  self.model_validation.speed_accuracy,
                                  self.model_validation.rotation_accuracy,
+                                 self.model_validation.translation_accuracy,
                                  self.model_validation.speed_cams,
                                  self.model_validation.rotation_cams,
+                                 self.model_validation.translation_cams,
                                  self.model_validation.speed_predictions,
-                                 self.model_validation.rotation_predictions],
+                                 self.model_validation.rotation_predictions,
+                                 self.model_validation.translation_predictions],
                                 feed_dict={self.model_validation.frames: frame_vectors,
                                            self.model_validation.targets: target_vectors
                                            })
@@ -420,12 +461,15 @@ class Networks:
                         validation_loss += loss
                         validation_speed_loss += speed_loss
                         validation_rotation_loss += rotation_loss
+                        validation_translation_loss += translation_loss
                         validation_speed_accuracy += speed_accuracy
                         validation_rotation_accuracy += rotation_accuracy
+                        validation_translation_accuracy += translation_accuracy
 
                         if (validation_batch_index + 1) % self.validation_display_term == 0:
                             speed_predictions = np.argmax(speed_predictions, axis=-1)
                             rotation_predictions = np.argmax(rotation_predictions, axis=-1)
+                            translation_predictions = np.argmax(translation_predictions, axis=-1)
                             targets = target_vectors
 
                             if len(targets) < 3:
@@ -440,27 +484,37 @@ class Networks:
                                 [speed_labels[targets[show_index, 0]] for show_index in show_indices]
                             rotation_target_labels = \
                                 [rotation_labels[targets[show_index, 1]] for show_index in show_indices]
+                            translation_target_labels = \
+                                [translation_labels[targets[show_index, 2]] for show_index in show_indices]
                             speed_prediction_labels = \
                                 [speed_labels[speed_predictions[show_index]] for show_index in show_indices]
                             rotation_prediction_labels = \
                                 [rotation_labels[rotation_predictions[show_index]] for show_index in show_indices]
+                            translation_prediction_labels = \
+                                [translation_labels[translation_predictions[show_index]] for show_index in show_indices]
 
                             print(
                                 "{:<20s}: {:05d} |{:<20s}: {:03d}/{:03d}\n" \
-                                "{:<20s}: {:.9f}/({:.5f},{:.5f}) ({})\n" \
-                                "Expected({:03d}): {:<16s},{:<16s}|Prediction({:03d}): {:<16s},{:<16s}\n" \
-                                "Expected({:03d}): {:<16s},{:<16s}|Prediction({:03d}): {:<16s},{:<16s}\n" \
-                                "Expected({:03d}): {:<16s},{:<16s}|Prediction({:03d}): {:<16s},{:<16s}".format(
+                                "{:<20s}: {:.9f}/({:.5f},{:.5f},{:.5f}) ({})\n" \
+                                "Expected({:03d}): {:<8s},{:<8s},{:<8s}|Prediction({:03d}): {:<8s},{:<8s},{:<8s}\n" \
+                                "Expected({:03d}): {:<8s},{:<8s},{:<8s}|Prediction({:03d}): {:<8s},{:<8s},{:<8s}\n" \
+                                "Expected({:03d}): {:<8s},{:<8s},{:<8s}|Prediction({:03d}): {:<8s},{:<8s},{:<8s}".format(
                                     "Epochs", epoch, "Batch Iterations",
                                     validation_batch_index + 1, loop_rounds,
-                                    "Loss", loss, speed_accuracy, rotation_accuracy,
+                                    "Loss", loss, speed_accuracy, rotation_accuracy, translation_accuracy,
                                     "VALIDATION",
-                                    show_indices[0] + 1, speed_target_labels[0], rotation_target_labels[0],
-                                    show_indices[0] + 1, speed_prediction_labels[0], rotation_prediction_labels[0],
-                                    show_indices[1] + 1, speed_target_labels[1], rotation_target_labels[1],
-                                    show_indices[1] + 1, speed_prediction_labels[1], rotation_prediction_labels[1],
-                                    show_indices[2] + 1, speed_target_labels[2], rotation_target_labels[2],
-                                    show_indices[2] + 1, speed_prediction_labels[2], rotation_prediction_labels[2]))
+                                    show_indices[0] + 1, speed_target_labels[0],
+                                    rotation_target_labels[0], translation_target_labels[0],
+                                    show_indices[0] + 1, speed_prediction_labels[0],
+                                    rotation_prediction_labels[0], translation_prediction_labels[0],
+                                    show_indices[1] + 1, speed_target_labels[1],
+                                    rotation_target_labels[1], translation_target_labels[1],
+                                    show_indices[1] + 1, speed_prediction_labels[1],
+                                    rotation_prediction_labels[1], translation_prediction_labels[1],
+                                    show_indices[2] + 1, speed_target_labels[2],
+                                    rotation_target_labels[2], translation_target_labels[2],
+                                    show_indices[2] + 1, speed_prediction_labels[2],
+                                    rotation_prediction_labels[2], translation_prediction_labels[2]))
 
                         if validation_batch_index < 10:
                             # Use jet colormap to colorize heatmap
@@ -473,6 +527,7 @@ class Networks:
                                 sampled_t = random.choice(range(self.temporal_width - 16 + 1))
                                 s_cam = np.array(speed_cams[n_i] * 255.0, dtype=np.uint8)
                                 r_cam = np.array(rotation_cams[n_i] * 255.0, dtype=np.uint8)
+                                t_cam = np.array(translation_cams[n_i] * 255.0, dtype=np.uint8)
                                 t_image = np.array(((frame_vectors[n_i] + 1.0) / 2.0) * 255.0, dtype=np.uint8)
                                 cams = list()
                                 images = list()
@@ -489,8 +544,13 @@ class Networks:
                                     rotation_cam = jet_colors[rotation_cam]
                                     rotation_cam = rotation_cam * 0.4 + t_image[t_i]
                                     rotation_cam = np.clip(np.round(rotation_cam), 0.0, 255.0).astype(dtype=np.uint8)
+                                    translation_cam = t_cam[t_i]
+                                    translation_cam = jet_colors[translation_cam]
+                                    translation_cam = translation_cam * 0.4 + t_image[t_i]
+                                    translation_cam = \
+                                        np.clip(np.round(translation_cam), 0.0, 255.0).astype(dtype=np.uint8)
 
-                                    cam_image = np.concatenate([speed_cam, rotation_cam], axis=0)
+                                    cam_image = np.concatenate([speed_cam, rotation_cam, translation_cam], axis=0)
                                     cams.append(cam_image)
                                     if t_i < sampled_t + 16 - 1:
                                         cams.append(np.concatenate([buffer, buffer], axis=0))
@@ -503,16 +563,20 @@ class Networks:
                     validation_loss /= float(loop_rounds)
                     validation_speed_loss /= float(loop_rounds)
                     validation_rotation_loss /= float(loop_rounds)
+                    validation_translation_loss /= float(loop_rounds)
                     validation_speed_accuracy /= float(loop_rounds)
                     validation_rotation_accuracy /= float(loop_rounds)
+                    validation_translation_accuracy /= float(loop_rounds)
 
                     validation_summary = \
                         session.run(self.validation_summaries,
                                     feed_dict={self.loss_summary_ph: validation_loss,
                                                self.speed_loss_summary_ph: validation_speed_loss,
                                                self.rotation_loss_summary_ph: validation_rotation_loss,
+                                               self.translation_loss_summary_ph: validation_translation_loss,
                                                self.speed_accuracy_summary_ph: validation_speed_accuracy,
                                                self.rotation_accuracy_summary_ph: validation_rotation_accuracy,
+                                               self.translation_accuracy_summary_ph: validation_translation_accuracy,
                                                self.image_summary_ph: input_images,
                                                self.cam_summary_ph: cam_images})
                     self.validation_summary_writer.add_summary(validation_summary, epoch)
@@ -1842,8 +1906,7 @@ class Networks:
                                 [-delta, 0], [0, -delta]]
                 trans_index = random.choice(range(len(trans_deltas)))
 
-                # targets = [speed_index, trans_index]
-                targets = [rot_index, trans_index]
+                targets = [speed_index, rot_index, trans_index]
 
                 sampled_points = random.sample(range(len(target_frames)),
                                                round(len(target_frames) * self.dataset.networks.random_ratio))
@@ -2061,8 +2124,7 @@ class Networks:
                                 [-delta, 0], [0, -delta]]
                 trans_index = random.choice(range(len(trans_deltas)))
 
-                # targets = [speed_index, trans_index]
-                targets = [rot_index, trans_index]
+                targets = [speed_index, rot_index, trans_index]
 
                 sampled_points = random.sample(range(len(target_frames)),
                                                round(len(target_frames) * self.dataset.networks.random_ratio))
@@ -3057,8 +3119,9 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 1.0
+            self.speed_gamma = 0.0
             self.rotation_gamma = 1.0
+            self.translation_gamma = 1.0
 
             if batch_size is None:
                 self.batch_size = \
@@ -3108,12 +3171,15 @@ class Networks:
             if self.phase == "pretraining":
                 self.speed_loss = 0.0
                 self.rotation_loss = 0.0
+                self.translation_loss = 0.0
                 self.speed_accuracy = 0.0
                 self.rotation_accuracy = 0.0
+                self.translation_accuracy = 0.0
                 self.speed_cams = list()
                 self.rotation_cams = list()
+                self.translation_cams = list()
                 self.speed_predictions = list()
-                self.rotation_predictions = list()
+                self.translation_predictions = list()
             else:
                 self.accuracy = 0.0
                 self.predictions = list()
@@ -3147,7 +3213,7 @@ class Networks:
 
             if self.phase == "pretraining":
                 self.targets = tf.placeholder(dtype=tf.int64,
-                                              shape=(batch_size, 2),
+                                              shape=(batch_size, 3),
                                               name="targets")
             else:
                 self.targets = tf.placeholder(dtype=tf.int64,
@@ -3232,10 +3298,12 @@ class Networks:
                                 targets = self.targets
 
                             if self.phase == "pretraining":
-                                speed_logits = net[..., :7]
-                                rotation_logits = net[..., 7:]
+                                speed_logits = net[..., :4]
+                                rotation_logits = net[..., 4:4 + 7]
+                                translation_logits = net[..., 4 + 7:]
                                 self.speed_predictions.append(tf.nn.softmax(speed_logits, axis=-1))
                                 self.rotation_predictions.append(tf.nn.softmax(rotation_logits, axis=-1))
+                                self.translation_predictions.append(tf.nn.softmax(translation_logits, axis=-1))
 
                                 self.speed_accuracy += \
                                     tf.reduce_mean(
@@ -3253,6 +3321,14 @@ class Networks:
                                                           axis=-1),
                                                 targets[..., 1]),
                                             self.networks.dtype))
+                                self.translation_accuracy += \
+                                    tf.reduce_mean(
+                                        tf.cast(
+                                            tf.equal(
+                                                tf.argmax(self.translation_predictions[-1],
+                                                          axis=-1),
+                                                targets[..., 2]),
+                                            self.networks.dtype))
 
                                 speed_loss = \
                                     tf.reduce_mean(
@@ -3264,10 +3340,17 @@ class Networks:
                                         tf.nn.sparse_softmax_cross_entropy_with_logits(
                                             labels=targets[..., 1], logits=rotation_logits))
                                 self.rotation_loss += rotation_loss
-                                loss = self.speed_gamma * speed_loss + self.rotation_gamma * rotation_loss
+                                translation_loss = \
+                                    tf.reduce_mean(
+                                        tf.nn.sparse_softmax_cross_entropy_with_logits(
+                                            labels=targets[..., 2], logits=translation_logits))
+                                self.translation_loss += translation_loss
+                                loss = self.speed_gamma * speed_loss + \
+                                       self.rotation_gamma * rotation_loss + \
+                                       self.translation_gamma * translation_loss
                                 self.loss += loss
 
-                                p_masks = tf.one_hot(tf.argmax(speed_logits, axis=-1), depth=7, dtype=tf.float32)
+                                p_masks = tf.one_hot(tf.argmax(speed_logits, axis=-1), depth=4, dtype=tf.float32)
                                 p_masks = tf.stop_gradient(p_masks)
                                 cost = tf.reduce_sum(tf.multiply(speed_logits, p_masks))
                                 target_features = \
@@ -3296,8 +3379,7 @@ class Networks:
                                 cams /= tf.reduce_max(cams, axis=(1, 2, 3), keepdims=True) + 1.0e-7
                                 self.speed_cams.append(cams)
 
-                                p_masks = tf.one_hot(tf.argmax(rotation_logits, axis=-1),
-                                                     depth=self.num_classes - 7, dtype=tf.float32)
+                                p_masks = tf.one_hot(tf.argmax(rotation_logits, axis=-1), depth=7, dtype=tf.float32)
                                 p_masks = tf.stop_gradient(p_masks)
                                 cost = tf.reduce_sum(tf.multiply(rotation_logits, p_masks))
                                 target_features = \
@@ -3325,6 +3407,35 @@ class Networks:
                                 cams -= tf.reduce_min(cams, axis=(1, 2, 3), keepdims=True)
                                 cams /= tf.reduce_max(cams, axis=(1, 2, 3), keepdims=True) + 1.0e-7
                                 self.rotation_cams.append(cams)
+
+                                p_masks = tf.one_hot(tf.argmax(translation_logits, axis=-1), depth=9, dtype=tf.float32)
+                                p_masks = tf.stop_gradient(p_masks)
+                                cost = tf.reduce_sum(tf.multiply(translation_logits, p_masks))
+                                target_features = \
+                                    [self.end_points["Mixed_5c"],
+                                     self.end_points["Mixed_4f"],
+                                     self.end_points["Mixed_3c"],
+                                     self.end_points["Conv3d_2d_3x1x1"],
+                                     self.end_points["Conv3d_1b_7x1x1"],
+                                     inputs]
+                                cams = list()
+                                N, T, H, W, _ = inputs.get_shape().as_list()
+                                for grad_feature in target_features:
+                                    grad = tf.nn.relu(tf.gradients(cost, grad_feature)[0])
+                                    grad = tf.reduce_sum(grad, axis=-1)
+                                    grad -= tf.reduce_min(grad, axis=(1, 2, 3), keepdims=True)
+                                    grad /= tf.reduce_max(grad, axis=(1, 2, 3), keepdims=True) + 1.0e-7
+                                    N, t, h, w = grad.get_shape().as_list()
+                                    grad = tf.reshape(grad, (N, t, h * w, 1))
+                                    grad = tf.image.resize_bilinear(grad, (T, h * w))
+                                    grad = tf.reshape(grad, (N * T, h, w, 1))
+                                    grad = tf.image.resize_bilinear(grad, (H, W))
+                                    grad = tf.reshape(grad, (N, T, H, W))
+                                    cams.append(grad)
+                                cams = tf.reduce_sum(tf.stack(cams, axis=-1), axis=-1)
+                                cams -= tf.reduce_min(cams, axis=(1, 2, 3), keepdims=True)
+                                cams /= tf.reduce_max(cams, axis=(1, 2, 3), keepdims=True) + 1.0e-7
+                                self.translation_cams.append(cams)
 
                             else:
                                 self.predictions.append(tf.nn.softmax(net, axis=-1))
@@ -3367,12 +3478,16 @@ class Networks:
                 if self.phase == "pretraining":
                     self.speed_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.rotation_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
+                    self.translation_loss /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.speed_accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.rotation_accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
+                    self.translation_accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.speed_cams = tf.concat(self.speed_cams, axis=0)
                     self.rotation_cams = tf.concat(self.rotation_cams, axis=0)
+                    self.translation_cams = tf.concat(self.translation_cams, axis=0)
                     self.speed_predictions = tf.concat(self.speed_predictions, axis=0)
                     self.rotation_predictions = tf.concat(self.rotation_predictions, axis=0)
+                    self.translation_predictions = tf.concat(self.translation_predictions, axis=0)
                 else:
                     self.accuracy /= tf.constant(self.networks.num_gpus, dtype=self.networks.dtype)
                     self.predictions = tf.concat(self.predictions, axis=0)
