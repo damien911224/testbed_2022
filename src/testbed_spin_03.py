@@ -3053,7 +3053,7 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 1.0
+            self.speed_gamma = 0.0
             self.rotation_gamma = 1.0
 
             if batch_size is None:
