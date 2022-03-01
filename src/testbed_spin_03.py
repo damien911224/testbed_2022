@@ -672,7 +672,7 @@ class Networks:
                                                          "UCF101",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0228_translation"),
+                                                         "0301_rot_trans"),
                          "weights.ckpt-{}".format(60))
 
         self.save_ckpt_file_folder = \
