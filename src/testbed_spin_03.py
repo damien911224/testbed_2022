@@ -37,8 +37,8 @@ class Networks:
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
         if self.dataset_name == "ucf101":
-            self.epochs = 60
-            # self.epochs = 180
+            # self.epochs = 60
+            self.epochs = 180
         elif self.dataset_name == "kinetics":
             self.epochs = 120
         self.temporal_width = 16
