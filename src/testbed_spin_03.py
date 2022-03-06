@@ -619,6 +619,7 @@ class Networks:
                     print("Validation Loss {:.5f}".format(validation_loss))
                     print("Validation Speed Accuracy {:.5f}".format(validation_speed_accuracy))
                     print("Validation Rotation Accuracy {:.5f}".format(validation_rotation_accuracy))
+                    print("Validation Translation Accuracy {:.5f}".format(validation_translation_accuracy))
                     print("=" * 90)
 
     def finetune(self, postfix):
