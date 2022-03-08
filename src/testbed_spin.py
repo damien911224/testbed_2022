@@ -40,7 +40,7 @@ class Networks:
             # self.epochs = 60
             self.epochs = 180
         elif self.dataset_name == "kinetics":
-            self.epochs = 120
+            self.epochs = 60
         self.temporal_width = 16
         self.display_term = 1
         self.dtype = tf.float32
