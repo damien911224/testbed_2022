@@ -1876,7 +1876,6 @@ class Networks:
                         # image = image.crop((crop_left, crop_top,
                         #                     crop_left + self.dataset.networks.input_size[1],
                         #                     crop_top + self.dataset.networks.input_size[0]))
-                        print(image_path)
                         image = image.crop((crop_left, crop_top,
                                             crop_left + 224,
                                             crop_top + 224))
