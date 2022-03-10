@@ -1060,15 +1060,11 @@ def self_attention(x, is_training,
                                            regularizer=bias_regularizer,
                                            trainable=is_training)
                     x = tf.nn.bias_add(x, bias)
-                x = self.normalization(x, is_training=is_training,
-                                       method=normalization_method,
-                                       dformat="NDHWC" if dformat == "NWC" else "NCDHW")
+                x = tf.contrib.layers.layer_norm(x, trainable=is_training)
 
         x = outputs + x
 
-        x = self.normalization(x, is_training=is_training,
-                               method=normalization_method,
-                               dformat="NDHWC" if dformat == "NWC" else "NCDHW")
+        x = tf.contrib.layers.layer_norm(x, trainable=is_training)
 
     with tf.variable_scope("FeedForward_0c", reuse=tf.AUTO_REUSE):
         with tf.variable_scope("FC_0a", reuse=tf.AUTO_REUSE):
@@ -1087,9 +1083,7 @@ def self_attention(x, is_training,
                                        regularizer=bias_regularizer,
                                        trainable=is_training)
                 outputs = tf.nn.bias_add(outputs, bias)
-            outputs = self.normalization(outputs, is_training=is_training,
-                                         method=normalization_method,
-                                         dformat="NDHWC" if dformat == "NWC" else "NCDHW")
+            outputs = tf.contrib.layers.layer_norm(outputs, trainable=is_training)
             outputs = activation_function(outputs)
 
             if relu_dropout_rate > 0.0:
@@ -1117,37 +1111,7 @@ def self_attention(x, is_training,
 
         outputs += x
 
-        outputs = self.normalization(outputs, is_training=is_training,
-                                     method=normalization_method,
-                                     dformat="NDHWC" if dformat == "NWC" else "NCDHW")
-
-    if inner_C != C:
-        with tf.variable_scope("Shortcut", reuse=tf.AUTO_REUSE):
-            kernel = tf.get_variable(name="conv_1d/kernel",
-                                     dtype=dtype,
-                                     shape=[1, C, inner_C],
-                                     initializer=kernel_initializer,
-                                     regularizer=kernel_regularizer,
-                                     trainable=is_training)
-            stage_input = tf.nn.conv1d(stage_input, kernel, [1, 1, 1], padding="SAME")
-            if use_bias:
-                bias = tf.get_variable(name="conv_1d/bias",
-                                       dtype=dtype,
-                                       shape=[inner_C],
-                                       initializer=bias_initializer,
-                                       regularizer=bias_regularizer,
-                                       trainable=is_training)
-                stage_input = tf.nn.bias_add(stage_input, bias)
-            stage_input = \
-                self.normalization(stage_input, is_training=is_training,
-                                   method=normalization_method,
-                                   dformat="NDHWC" if dformat == "NWC" else "NCDHW")
-
-    outputs += stage_input
-
-    outputs = self.normalization(outputs, is_training=is_training,
-                                 method=normalization_method,
-                                 dformat="NDHWC" if dformat == "NWC" else "NCDHW")
+        outputs = tf.contrib.layers.layer_norm(outputs, trainable=is_training)
 
     if dformat == "NCW":
         outputs = tf.transpose(outputs, (0, 2, 1))
