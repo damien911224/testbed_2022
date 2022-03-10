@@ -755,7 +755,7 @@ def inception(x, branches, is_training,
     return net
 
 
-def self_attention(self, x, is_training,
+def self_attention(x, is_training,
                    num_heads=8,
                    attention_dropout_rate=0.1,
                    relu_dropout_rate=0.1,
