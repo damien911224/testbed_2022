@@ -29,10 +29,10 @@ class Networks:
 
         self.is_server = True
         self.batch_size = 8 if self.is_server else 2
-        self.num_gpus = 4 if self.is_server else 1
+        self.num_gpus = 2 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "kinetics"
+        self.dataset_name = "ucf101"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
