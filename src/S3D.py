@@ -794,8 +794,6 @@ def self_attention(x, is_training,
     else:
         inner_C = output_channel
 
-    stage_input = tf.identity(x)
-
     with tf.variable_scope("SelfAttention_0a", reuse=tf.AUTO_REUSE):
         outputs = tf.identity(x)
 
