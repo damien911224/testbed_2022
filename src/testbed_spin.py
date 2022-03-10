@@ -29,10 +29,10 @@ class Networks:
 
         self.is_server = True
         self.batch_size = 8 if self.is_server else 2
-        self.num_gpus = 2 if self.is_server else 1
+        self.num_gpus = 4 if self.is_server else 1
         self.num_workers = self.num_gpus * 24
         self.data_type = "images"
-        self.dataset_name = "ucf101"
+        self.dataset_name = "kinetics"
         self.dataset_split = "split01"
         self.flow_type = "tvl1"
         self.optimizer_type = "SGD"
@@ -47,7 +47,7 @@ class Networks:
         self.dformat = "NDHWC"
 
         if self.dataset_name == "ucf101":
-            self.random_ratio = 0.3
+            self.random_ratio = 0.2
         elif self.dataset_name == "kinetics":
             self.random_ratio = 0.2
 
@@ -1802,22 +1802,23 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                # speed_steps = [1.0]
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
                 frame_index = 0
                 count = 0
-                sampled_points = random.sample(range(len(target_frames)),
+                # sampled_points = random.sample(range(len(target_frames)),
                                                round(len(target_frames) * self.dataset.networks.random_ratio))
                 while True:
                     sampled_frame = 1 + (start_index + math.floor(frame_index)) % frame_length
                     target_frames.append(sampled_frame)
-                    if count in sampled_points:
-                        frame_index += speed_steps[speed_index]
-                    else:
-                        frame_index += 1.0
+                    # if count in sampled_points:
+                    #     frame_index += speed_steps[speed_index]
+                    # else:
+                    #     frame_index += 1.0
+                    frame_index += speed_steps[speed_index]
                     count += 1
                     if count >= self.dataset.networks.temporal_width:
                         break
@@ -2043,22 +2044,23 @@ class Networks:
                 frame_length = int(splits[1])
                 # class_index = int(splits[2])
 
-                speed_steps = [0.5, 1.0, 2.0, 3.0]
-                # speed_steps = [1.0]
+                # speed_steps = [0.5, 1.0, 2.0, 3.0]
+                speed_steps = [1.0]
                 speed_index = random.choice(range(len(speed_steps)))
                 target_frames = list()
                 start_index = random.choice(range(frame_length))
                 frame_index = 0
                 count = 0
-                sampled_points = random.sample(range(len(target_frames)),
-                                               round(len(target_frames) * self.dataset.networks.random_ratio))
+                # sampled_points = random.sample(range(len(target_frames)),
+                #                                round(len(target_frames) * self.dataset.networks.random_ratio))
                 while True:
                     sampled_frame = 1 + (start_index + math.floor(frame_index)) % frame_length
                     target_frames.append(sampled_frame)
-                    if count in sampled_points:
-                        frame_index += speed_steps[speed_index]
-                    else:
-                        frame_index += 1.0
+                    # if count in sampled_points:
+                    #     frame_index += speed_steps[speed_index]
+                    # else:
+                    #     frame_index += 1.0
+                    frame_index += speed_steps[speed_index]
                     count += 1
                     if count >= self.dataset.networks.temporal_width:
                         break
@@ -3099,7 +3101,7 @@ class Networks:
             self.weight_decay = 5.0e-4
             self.dropout_prob = 0.5
 
-            self.speed_gamma = 1.0
+            self.speed_gamma = 0.0
             self.rotation_gamma = 1.0
 
             if batch_size is None:
