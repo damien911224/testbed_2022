@@ -1810,7 +1810,7 @@ class Networks:
                 frame_index = 0
                 count = 0
                 # sampled_points = random.sample(range(len(target_frames)),
-                                               round(len(target_frames) * self.dataset.networks.random_ratio))
+                #                                round(len(target_frames) * self.dataset.networks.random_ratio))
                 while True:
                     sampled_frame = 1 + (start_index + math.floor(frame_index)) % frame_length
                     target_frames.append(sampled_frame)
