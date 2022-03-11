@@ -1886,7 +1886,7 @@ class Networks:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
                         if i in sampled_points:
-                            cum_rot_degree += base_degree * rot_degrees[rot_index]
+                            cum_rot_degree += base_degree + rot_degrees[rot_index] * i
 
                         # cum_rot_degree += rot_degrees[rot_index]
 
@@ -2130,7 +2130,7 @@ class Networks:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
                         if i in sampled_points:
-                            cum_rot_degree += base_degree * rot_degrees[rot_index]
+                            cum_rot_degree += base_degree + rot_degrees[rot_index] * i
 
                         # cum_rot_degree += rot_degrees[rot_index]
 
