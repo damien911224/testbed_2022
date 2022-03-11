@@ -1864,7 +1864,7 @@ class Networks:
                     # rand_aug.n = random.choice(range(1, 3))
                     # rand_aug.m = random.choice(range(1, 11))
 
-                    # cum_rot_degree = 0
+                    cum_rot_degree = 0
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
@@ -2108,7 +2108,7 @@ class Networks:
                     # rand_aug.n = random.choice(range(1, 3))
                     # rand_aug.m = random.choice(range(1, 11))
 
-                    # cum_rot_degree = 0
+                    cum_rot_degree = 0
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
