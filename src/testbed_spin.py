@@ -1840,6 +1840,7 @@ class Networks:
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
                 # rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
                 rot_degrees = [-5, -3, -1, 0, 1, 3, 5]
+                base_degree = random.choice(rot_degrees)
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
@@ -1885,7 +1886,7 @@ class Networks:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
                         if i in sampled_points:
-                            cum_rot_degree += rot_degrees[rot_index] * i
+                            cum_rot_degree += base_degree * rot_degrees[rot_index]
 
                         # cum_rot_degree += rot_degrees[rot_index]
 
@@ -2083,6 +2084,7 @@ class Networks:
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
                 # rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
                 rot_degrees = [-5, -3, -1, 0, 1, 3, 5]
+                base_degree = random.choice(rot_degrees)
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
@@ -2128,7 +2130,7 @@ class Networks:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
                         if i in sampled_points:
-                            cum_rot_degree += rot_degrees[rot_index] * i
+                            cum_rot_degree += base_degree * rot_degrees[rot_index] * i
 
                         # cum_rot_degree += rot_degrees[rot_index]
 
