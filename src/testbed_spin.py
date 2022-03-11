@@ -47,7 +47,7 @@ class Networks:
         self.dformat = "NDHWC"
 
         if self.dataset_name == "ucf101":
-            self.random_ratio = 0.2
+            self.random_ratio = 1.0
         elif self.dataset_name == "kinetics":
             self.random_ratio = 0.2
 
@@ -1838,7 +1838,8 @@ class Networks:
 
                 frames = list()
                 # rot_degrees = [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
-                rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
+                # rot_degrees = [-7, -5, -3, 0, 3, 5, 7]
+                rot_degrees = [-5, -3, -1, 0, 1, 3, 5]
                 # rot_degrees = [0, 90, 180, 270]
                 rot_index = random.choice(range(len(rot_degrees)))
                 # cum_rot_index = random.choice(range(len(rot_degrees)))
@@ -1862,7 +1863,7 @@ class Networks:
                     # rand_aug.n = random.choice(range(1, 3))
                     # rand_aug.m = random.choice(range(1, 11))
 
-                    cum_rot_degree = 0
+                    # cum_rot_degree = 0
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
@@ -1884,7 +1885,7 @@ class Networks:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
                         if i in sampled_points:
-                            cum_rot_degree += rot_degrees[rot_index]
+                            cum_rot_degree += rot_degrees[rot_index] * i
 
                         # cum_rot_degree += rot_degrees[rot_index]
 
@@ -2104,7 +2105,7 @@ class Networks:
                     # rand_aug.n = random.choice(range(1, 3))
                     # rand_aug.m = random.choice(range(1, 11))
 
-                    cum_rot_degree = 0
+                    # cum_rot_degree = 0
                     if self.dataset.networks.data_type == "images":
                         image_path = os.path.join(self.dataset.frames_folder, identity,
                                                   "{}_{:05d}.jpg".format(self.dataset.prefix, frame_index))
@@ -2126,7 +2127,7 @@ class Networks:
                             image = image.transpose(method=Image.FLIP_LEFT_RIGHT)
 
                         if i in sampled_points:
-                            cum_rot_degree += rot_degrees[rot_index]
+                            cum_rot_degree += rot_degrees[rot_index] * i
 
                         # cum_rot_degree += rot_degrees[rot_index]
 

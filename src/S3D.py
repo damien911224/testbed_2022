@@ -288,14 +288,19 @@ def build_model(inputs, weight_decay, end_points, dtype, dformat, is_training, s
         except KeyError:
             end_points[end_point] = net
 
-        end_point = 'SelfAttention_3d'
-        with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-            N, T, H, W, C = net.get_shape().as_list()
-            net = tf.reshape(net, (N, -1, C))
-            net = self_attention(x=net, is_training=is_training,
-                                 kernel_initializer=kernel_initializer,
-                                 kernel_regularizer=kernel_regularizer)
-            net = tf.reshape(net, (N, T, H, W, C))
+        # end_point = 'SelfAttention_3d'
+        # with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+        #     N, T, H, W, C = net.get_shape().as_list()
+        #     net = tf.reshape(net, (N, -1, C))
+        #     net = self_attention(x=net, is_training=is_training,
+        #                          kernel_initializer=kernel_initializer,
+        #                          kernel_regularizer=kernel_regularizer)
+        #     net = tf.reshape(net, (N, T, H, W, C))
+        # try:
+        #     end_points[end_point] = \
+        #         tf.concat([end_points[end_point], net], axis=0)
+        # except KeyError:
+        #     end_points[end_point] = net
 
         end_point = 'MaxPool_4a_3x3x3'
         with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
@@ -394,14 +399,14 @@ def build_model(inputs, weight_decay, end_points, dtype, dformat, is_training, s
         except KeyError:
             end_points[end_point] = net
 
-        end_point = 'SelfAttention_4g'
-        with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-            N, T, H, W, C = net.get_shape().as_list()
-            net = tf.reshape(net, (N, -1, C))
-            net = self_attention(x=net, is_training=is_training,
-                                 kernel_initializer=kernel_initializer,
-                                 kernel_regularizer=kernel_regularizer)
-            net = tf.reshape(net, (N, T, H, W, C))
+        # end_point = 'SelfAttention_4g'
+        # with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+        #     N, T, H, W, C = net.get_shape().as_list()
+        #     net = tf.reshape(net, (N, -1, C))
+        #     net = self_attention(x=net, is_training=is_training,
+        #                          kernel_initializer=kernel_initializer,
+        #                          kernel_regularizer=kernel_regularizer)
+        #     net = tf.reshape(net, (N, T, H, W, C))
 
         end_point = 'MaxPool_5a_2x2x2'
         with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
@@ -445,14 +450,14 @@ def build_model(inputs, weight_decay, end_points, dtype, dformat, is_training, s
         except KeyError:
             end_points[end_point] = net
 
-        end_point = 'SelfAttention_5d'
-        with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
-            N, T, H, W, C = net.get_shape().as_list()
-            net = tf.reshape(net, (N, -1, C))
-            net = self_attention(x=net, is_training=is_training,
-                                 kernel_initializer=kernel_initializer,
-                                 kernel_regularizer=kernel_regularizer)
-            net = tf.reshape(net, (N, T, H, W, C))
+        # end_point = 'SelfAttention_5d'
+        # with tf.variable_scope(end_point, reuse=tf.AUTO_REUSE):
+        #     N, T, H, W, C = net.get_shape().as_list()
+        #     net = tf.reshape(net, (N, -1, C))
+        #     net = self_attention(x=net, is_training=is_training,
+        #                          kernel_initializer=kernel_initializer,
+        #                          kernel_regularizer=kernel_regularizer)
+        #     net = tf.reshape(net, (N, T, H, W, C))
 
         return net
 
