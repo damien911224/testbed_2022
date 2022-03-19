@@ -601,11 +601,11 @@ class Networks:
             os.path.join(self.dataset.root_path,
                          "networks", "weights",
                          "save", "{}_{}_{}_{}_{}".format(self.model_name,
-                                                         "UCF101",
+                                                         "KINETICS",
                                                          "RGB" if self.data_type == "images" else "Flow",
                                                          "Pretraining",
-                                                         "0311_accel"),
-                         "weights.ckpt-{}".format(60))
+                                                         "0302_speed_same_aug_no_first_no_cum"),
+                         "weights.ckpt-{}".format(120))
 
         self.save_ckpt_file_folder = \
             os.path.join(self.dataset.root_path,
